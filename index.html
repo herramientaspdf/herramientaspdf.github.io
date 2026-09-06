@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Herramientas PDF - PDF gratis</title>
 
-    <!-- Librería gratuita para trabajar con PDF -->
     <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 
     <style>
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -154,492 +155,18 @@
             margin: 15px 0;
         }
 
-        #status {
-            margin-top: 20px;
-            font-weight: bold;
-        }
-
-        footer {
-            margin-top: 50px;
-            background: #111827;
-            color: white;
-            text-align: center;
-            padding: 30px 20px;
-        }
-
-        footer p {
-            color: #9ca3af;
-            margin-top: 8px;
-        }
-
-        @media (max-width: 600px) {
-            .hero h1 {
-                font-size: 32px;
-            }
-
-            nav {
-                display: none;
-            }
-        }
-    </style>
-</head>
-
-<body>
-
-<header>
-    <div class="logo">Herramientas <span>PDF</span></div>
-
-    <nav>
-        <a href="#">Inicio</a>
-        <a href="#herramientas">Herramientas</a>
-        <a href="#acerca">Acerca de</a>
-    </nav>
-</header>
-
-
-<section class="hero">
-    <h1>Tus PDF, <span>más fáciles</span></h1>
-
-    <p>
-        Herramientas PDF gratuitas, rápidas y fáciles de usar.
-        Trabaja con tus documentos directamente desde tu navegador.
-    </p>
-</section>
-
-
-<section class="tools" id="herramientas">
-
-    <div class="tool">
-        <div class="icon">📎</div>
-
-        <h2>Unir PDF</h2>
-
-        <p>
-            Combina varios archivos PDF en un solo documento.
-        </p>
-
-        <button onclick="mostrarUnir()">
-            Unir PDF
-        </button>
-    </div>
-
-
-    <div class="tool">
-        <div class="icon">✂️</div>
-
-        <h2>Dividir PDF</h2>
-
-        <p>
-            Separa las páginas de un documento PDF.
-        </p>
-
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
-            Dividir PDF
-        </button>
-    </div>
-
-
-    <div class="tool">
-        <div class="icon">🗜️</div>
-
-        <h2>Comprimir PDF</h2>
-
-        <p>
-            Reduce el tamaño de tus documentos PDF.
-        </p>
-
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
-            Comprimir PDF
-        </button>
-    </div>
-
-
-    <div class="tool">
-        <div class="icon">🔄</div>
-
-        <h2>Girar PDF</h2>
-
-        <p>
-            Gira las páginas de tus documentos PDF.
-        </p>
-
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
-            Girar PDF
-        </button>
-    </div>
-
-
-    <div class="tool">
-        <div class="icon">🖼️</div>
-
-        <h2>JPG a PDF</h2>
-
-        <p>
-            Convierte imágenes JPG en documentos PDF.
-        </p>
-
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
-            JPG a PDF
-        </button>
-    </div>
-
-
-    <div class="tool">
-        <div class="icon">📄</div>
-
-        <h2>PDF a JPG</h2>
-
-        <p>
-            Convierte páginas PDF en imágenes.
-        </p>
-
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
-            PDF a JPG
-        </button>
-    </div>
-
-</section>
-
-
-<!-- ÁREA PARA UNIR PDF -->
-
-<section class="upload-area" id="unirArea">
-
-    <h2>📎 Unir archivos PDF</h2>
-
-    <p>
-        Selecciona dos o más archivos PDF para unirlos.
-    </p>
-
-    <input
-        type="file"
-        id="pdfFiles"
-        accept="application/pdf"
-        multiple
-    >
-
-    <br>
-
-    <button onclick="unirPDF()">
-        Unir archivos
-    </button>
-
-    <div id="status"></div>
-
-</section>
-
-
-<section id="acerca" style="text-align:center; padding:40px 20px;">
-
-    <h2>Herramientas PDF gratuitas</h2>
-
-    <p style="max-width:650px; margin:15px auto; color:#6b7280; line-height:1.6;">
-        Nuestra página busca ofrecer herramientas sencillas para trabajar
-        con documentos PDF sin complicaciones.
-    </p>
-
-</section>
-
-
-<footer>
-    <strong>Herramientas PDF</strong>
-    <p>Herramientas gratuitas para tus documentos.</p>
-</footer>
-
-
-<script>
-
-    function mostrarUnir() {
-
-        const area = document.getElementById("unirArea");
-
-        area.style.display = "block";
-
-        area.scrollIntoView({
-            behavior: "smooth"
-        });
-    }
-
-
-    async function unirPDF() {
-
-        const archivos =
-            document.getElementById("pdfFiles").files;
-
-        const status =
-            document.getElementById("status");
-
-
-        if (archivos.length < 2) {
-
-            status.textContent =
-                "⚠️ Selecciona al menos 2 archivos PDF.";
-
-            return;
-        }
-
-
-        try {
-
-            status.textContent =
-                "⏳ Uniendo los archivos...";
-
-
-            const PDFDocument = PDFLib.PDFDocument;
-
-            const pdfFinal = await PDFDocument.create();
-
-
-            for (const archivo of archivos) {
-
-                const bytes = await archivo.arrayBuffer();
-
-                const pdf =
-                    await PDFDocument.load(bytes);
-
-
-                const paginas =
-                    await pdfFinal.copyPages(
-                        pdf,
-                        pdf.getPageIndices()
-                    );
-
-
-                paginas.forEach((pagina) => {
-
-                    pdfFinal.addPage(pagina);
-
-                });
-
-            }
-
-
-            const resultado =
-                await pdfFinal.save();
-
-
-            const blob =
-                new Blob(
-                    [resultado],
-                    { type: "application/pdf" }
-                );
-
-
-            const url =
-                URL.createObjectURL(blob);
-
-
-            const enlace =
-                document.createElement("a");
-
-            enlace.href = url;
-
-            enlace.download =
-                "PDF-unido.pdf";
-
-            enlace.textContent =
-                "⬇️ Descargar PDF unido";
-
-            enlace.style.display =
-                "inline-block";
-
-            enlace.style.marginTop =
-                "15px";
-
-            enlace.style.textDecoration =
-                "none";
-
-            enlace.style.background =
-                "#16a34a";
-
-            enlace.style.color =
-                "white";
-
-            enlace.style.padding =
-                "12px 20px";
-
-            enlace.style.borderRadius =
-                "8px";
-
-
-            status.innerHTML =
-                "✅ ¡PDF creado correctamente!<br>";
-
-
-            status.appendChild(enlace);
-
-
-        } catch (error) {
-
-            console.error(error);
-
-            status.textContent =
-                "❌ Ocurrió un error al procesar los archivos.";
-
-        }
-
-    }
-
-</script>
-
-</body>
-</html><!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herramientas PDF - PDF gratis</title>
-
-    <!-- Librería gratuita para trabajar con PDF -->
-    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f5f7fb;
-            color: #1f2937;
-        }
-
-        header {
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 18px 7%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2563eb;
-        }
-
-        .logo span {
-            color: #111827;
-        }
-
-        nav a {
-            text-decoration: none;
-            color: #4b5563;
-            margin-left: 25px;
-            font-size: 15px;
-        }
-
-        nav a:hover {
-            color: #2563eb;
-        }
-
-        .hero {
-            text-align: center;
-            padding: 65px 20px 45px;
-        }
-
-        .hero h1 {
-            font-size: 44px;
-            margin-bottom: 15px;
-            color: #111827;
-        }
-
-        .hero h1 span {
-            color: #2563eb;
-        }
-
-        .hero p {
-            font-size: 18px;
-            color: #6b7280;
-            max-width: 650px;
-            margin: auto;
-            line-height: 1.6;
-        }
-
-        .tools {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 20px;
-        }
-
-        .tool {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 15px;
-            padding: 28px;
-            text-align: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.04);
-            transition: 0.2s;
-        }
-
-        .tool:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-        }
-
-        .icon {
-            font-size: 42px;
-            margin-bottom: 15px;
-        }
-
-        .tool h2 {
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        .tool p {
-            color: #6b7280;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 20px;
-        }
-
-        button {
-            border: none;
-            background: #2563eb;
-            color: white;
-            padding: 12px 22px;
+        input[type="text"] {
+            width: 90%;
+            max-width: 500px;
+            padding: 12px;
+            margin: 10px 0 20px;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
             font-size: 15px;
-            cursor: pointer;
-            font-weight: bold;
         }
 
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        .upload-area {
-            max-width: 800px;
-            margin: 25px auto 60px;
-            background: white;
-            border: 2px dashed #93c5fd;
-            border-radius: 15px;
-            padding: 40px 25px;
-            text-align: center;
-            display: none;
-        }
-
-        .upload-area h2 {
-            margin-bottom: 10px;
-        }
-
-        .upload-area p {
-            color: #6b7280;
-            margin-bottom: 20px;
-        }
-
-        input[type="file"] {
-            margin: 15px 0;
-        }
-
-        #status {
+        #status,
+        #splitStatus {
             margin-top: 20px;
             font-weight: bold;
         }
@@ -658,6 +185,7 @@
         }
 
         @media (max-width: 600px) {
+
             .hero h1 {
                 font-size: 32px;
             }
@@ -665,39 +193,69 @@
             nav {
                 display: none;
             }
+
         }
+
     </style>
+
 </head>
 
 <body>
 
+
 <header>
-    <div class="logo">Herramientas <span>PDF</span></div>
+
+    <div class="logo">
+        Herramientas <span>PDF</span>
+    </div>
 
     <nav>
+
         <a href="#">Inicio</a>
-        <a href="#herramientas">Herramientas</a>
-        <a href="#acerca">Acerca de</a>
+
+        <a href="#herramientas">
+            Herramientas
+        </a>
+
+        <a href="#acerca">
+            Acerca de
+        </a>
+
     </nav>
+
 </header>
 
 
+
 <section class="hero">
-    <h1>Tus PDF, <span>más fáciles</span></h1>
+
+    <h1>
+        Tus PDF, <span>más fáciles</span>
+    </h1>
 
     <p>
         Herramientas PDF gratuitas, rápidas y fáciles de usar.
         Trabaja con tus documentos directamente desde tu navegador.
     </p>
+
 </section>
+
 
 
 <section class="tools" id="herramientas">
 
-    <div class="tool">
-        <div class="icon">📎</div>
 
-        <h2>Unir PDF</h2>
+    <!-- UNIR PDF -->
+
+    <div class="tool">
+
+        <div class="icon">
+            📎
+        </div>
+
+        <h2>
+            Unir PDF
+        </h2>
 
         <p>
             Combina varios archivos PDF en un solo documento.
@@ -706,91 +264,141 @@
         <button onclick="mostrarUnir()">
             Unir PDF
         </button>
+
     </div>
 
 
-    <div class="tool">
-        <div class="icon">✂️</div>
 
-        <h2>Dividir PDF</h2>
+    <!-- DIVIDIR PDF -->
+
+    <div class="tool">
+
+        <div class="icon">
+            ✂️
+        </div>
+
+        <h2>
+            Dividir PDF
+        </h2>
 
         <p>
-            Separa las páginas de un documento PDF.
+            Extrae las páginas que necesites de un documento PDF.
         </p>
 
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
+        <button onclick="mostrarDividir()">
             Dividir PDF
         </button>
+
     </div>
 
 
-    <div class="tool">
-        <div class="icon">🗜️</div>
 
-        <h2>Comprimir PDF</h2>
+    <!-- COMPRIMIR -->
+
+    <div class="tool">
+
+        <div class="icon">
+            🗜️
+        </div>
+
+        <h2>
+            Comprimir PDF
+        </h2>
 
         <p>
             Reduce el tamaño de tus documentos PDF.
         </p>
 
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
+        <button onclick="alert('Esta herramienta la agregaremos próximamente.')">
             Comprimir PDF
         </button>
+
     </div>
 
 
-    <div class="tool">
-        <div class="icon">🔄</div>
 
-        <h2>Girar PDF</h2>
+    <!-- GIRAR -->
+
+    <div class="tool">
+
+        <div class="icon">
+            🔄
+        </div>
+
+        <h2>
+            Girar PDF
+        </h2>
 
         <p>
             Gira las páginas de tus documentos PDF.
         </p>
 
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
+        <button onclick="alert('Esta herramienta la agregaremos próximamente.')">
             Girar PDF
         </button>
+
     </div>
 
 
-    <div class="tool">
-        <div class="icon">🖼️</div>
 
-        <h2>JPG a PDF</h2>
+    <!-- JPG A PDF -->
+
+    <div class="tool">
+
+        <div class="icon">
+            🖼️
+        </div>
+
+        <h2>
+            JPG a PDF
+        </h2>
 
         <p>
             Convierte imágenes JPG en documentos PDF.
         </p>
 
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
+        <button onclick="alert('Esta herramienta la agregaremos próximamente.')">
             JPG a PDF
         </button>
+
     </div>
 
 
-    <div class="tool">
-        <div class="icon">📄</div>
 
-        <h2>PDF a JPG</h2>
+    <!-- PDF A JPG -->
+
+    <div class="tool">
+
+        <div class="icon">
+            📄
+        </div>
+
+        <h2>
+            PDF a JPG
+        </h2>
 
         <p>
             Convierte páginas PDF en imágenes.
         </p>
 
-        <button onclick="alert('Esta herramienta la agregaremos en el siguiente paso.')">
+        <button onclick="alert('Esta herramienta la agregaremos próximamente.')">
             PDF a JPG
         </button>
+
     </div>
 
+
 </section>
+
 
 
 <!-- ÁREA PARA UNIR PDF -->
 
 <section class="upload-area" id="unirArea">
 
-    <h2>📎 Unir archivos PDF</h2>
+    <h2>
+        📎 Unir archivos PDF
+    </h2>
 
     <p>
         Selecciona dos o más archivos PDF para unirlos.
@@ -814,158 +422,595 @@
 </section>
 
 
+
+<!-- ÁREA PARA DIVIDIR PDF -->
+
+<section class="upload-area" id="dividirArea">
+
+    <h2>
+        ✂️ Dividir PDF
+    </h2>
+
+    <p>
+        Selecciona un PDF y escribe las páginas que quieres extraer.
+    </p>
+
+    <input
+        type="file"
+        id="splitFile"
+        accept="application/pdf"
+        onchange="mostrarNumeroPaginas()"
+    >
+
+    <p id="pageInfo"></p>
+
+    <p>
+        Ejemplos:
+        <br>
+        <strong>1</strong>
+        <br>
+        <strong>1-3</strong>
+        <br>
+        <strong>1,3,5</strong>
+        <br>
+        <strong>2-4,7</strong>
+    </p>
+
+    <input
+        type="text"
+        id="pageRanges"
+        placeholder="Ejemplo: 1-3,5"
+    >
+
+    <br>
+
+    <button onclick="dividirPDF()">
+        Extraer páginas
+    </button>
+
+    <div id="splitStatus"></div>
+
+</section>
+
+
+
+<!-- ACERCA -->
+
 <section id="acerca" style="text-align:center; padding:40px 20px;">
 
-    <h2>Herramientas PDF gratuitas</h2>
+    <h2>
+        Herramientas PDF gratuitas
+    </h2>
 
     <p style="max-width:650px; margin:15px auto; color:#6b7280; line-height:1.6;">
-        Nuestra página busca ofrecer herramientas sencillas para trabajar
-        con documentos PDF sin complicaciones.
+
+        Nuestra página busca ofrecer herramientas sencillas
+        para trabajar con documentos PDF sin complicaciones.
+
     </p>
 
 </section>
 
 
+
 <footer>
-    <strong>Herramientas PDF</strong>
-    <p>Herramientas gratuitas para tus documentos.</p>
+
+    <strong>
+        Herramientas PDF
+    </strong>
+
+    <p>
+        Herramientas gratuitas para tus documentos.
+    </p>
+
 </footer>
+
 
 
 <script>
 
-    function mostrarUnir() {
 
-        const area = document.getElementById("unirArea");
+/* =========================
+   MOSTRAR UNIR
+========================= */
 
-        area.style.display = "block";
+function mostrarUnir() {
 
-        area.scrollIntoView({
-            behavior: "smooth"
-        });
+    const area =
+        document.getElementById("unirArea");
+
+    area.style.display = "block";
+
+    document.getElementById("dividirArea")
+        .style.display = "none";
+
+    area.scrollIntoView({
+        behavior: "smooth"
+    });
+
+}
+
+
+
+/* =========================
+   UNIR PDF
+========================= */
+
+async function unirPDF() {
+
+    const archivos =
+        document.getElementById("pdfFiles").files;
+
+    const status =
+        document.getElementById("status");
+
+
+    if (archivos.length < 2) {
+
+        status.textContent =
+            "⚠️ Selecciona al menos 2 archivos PDF.";
+
+        return;
+
     }
 
 
-    async function unirPDF() {
+    try {
 
-        const archivos =
-            document.getElementById("pdfFiles").files;
-
-        const status =
-            document.getElementById("status");
+        status.textContent =
+            "⏳ Uniendo los archivos...";
 
 
-        if (archivos.length < 2) {
-
-            status.textContent =
-                "⚠️ Selecciona al menos 2 archivos PDF.";
-
-            return;
-        }
+        const PDFDocument =
+            PDFLib.PDFDocument;
 
 
-        try {
-
-            status.textContent =
-                "⏳ Uniendo los archivos...";
+        const pdfFinal =
+            await PDFDocument.create();
 
 
-            const PDFDocument = PDFLib.PDFDocument;
+        for (const archivo of archivos) {
 
-            const pdfFinal = await PDFDocument.create();
-
-
-            for (const archivo of archivos) {
-
-                const bytes = await archivo.arrayBuffer();
-
-                const pdf =
-                    await PDFDocument.load(bytes);
+            const bytes =
+                await archivo.arrayBuffer();
 
 
-                const paginas =
-                    await pdfFinal.copyPages(
-                        pdf,
-                        pdf.getPageIndices()
-                    );
+            const pdf =
+                await PDFDocument.load(bytes);
 
 
-                paginas.forEach((pagina) => {
-
-                    pdfFinal.addPage(pagina);
-
-                });
-
-            }
-
-
-            const resultado =
-                await pdfFinal.save();
-
-
-            const blob =
-                new Blob(
-                    [resultado],
-                    { type: "application/pdf" }
+            const paginas =
+                await pdfFinal.copyPages(
+                    pdf,
+                    pdf.getPageIndices()
                 );
 
 
-            const url =
-                URL.createObjectURL(blob);
-
-
-            const enlace =
-                document.createElement("a");
-
-            enlace.href = url;
-
-            enlace.download =
-                "PDF-unido.pdf";
-
-            enlace.textContent =
-                "⬇️ Descargar PDF unido";
-
-            enlace.style.display =
-                "inline-block";
-
-            enlace.style.marginTop =
-                "15px";
-
-            enlace.style.textDecoration =
-                "none";
-
-            enlace.style.background =
-                "#16a34a";
-
-            enlace.style.color =
-                "white";
-
-            enlace.style.padding =
-                "12px 20px";
-
-            enlace.style.borderRadius =
-                "8px";
-
-
-            status.innerHTML =
-                "✅ ¡PDF creado correctamente!<br>";
-
-
-            status.appendChild(enlace);
-
-
-        } catch (error) {
-
-            console.error(error);
-
-            status.textContent =
-                "❌ Ocurrió un error al procesar los archivos.";
+            paginas.forEach(
+                pagina => pdfFinal.addPage(pagina)
+            );
 
         }
 
+
+        const resultado =
+            await pdfFinal.save();
+
+
+        const blob =
+            new Blob(
+                [resultado],
+                {
+                    type: "application/pdf"
+                }
+            );
+
+
+        const url =
+            URL.createObjectURL(blob);
+
+
+        const enlace =
+            document.createElement("a");
+
+
+        enlace.href = url;
+
+        enlace.download =
+            "PDF-unido.pdf";
+
+
+        enlace.textContent =
+            "⬇️ Descargar PDF unido";
+
+
+        enlace.style.display =
+            "inline-block";
+
+        enlace.style.marginTop =
+            "15px";
+
+        enlace.style.textDecoration =
+            "none";
+
+        enlace.style.background =
+            "#16a34a";
+
+        enlace.style.color =
+            "white";
+
+        enlace.style.padding =
+            "12px 20px";
+
+        enlace.style.borderRadius =
+            "8px";
+
+
+        status.innerHTML =
+            "✅ ¡PDF creado correctamente!<br>";
+
+
+        status.appendChild(enlace);
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        status.textContent =
+            "❌ Ocurrió un error al procesar los archivos.";
+
     }
 
+}
+
+
+
+/* =========================
+   MOSTRAR DIVIDIR
+========================= */
+
+function mostrarDividir() {
+
+    const area =
+        document.getElementById("dividirArea");
+
+
+    area.style.display =
+        "block";
+
+
+    document.getElementById("unirArea")
+        .style.display = "none";
+
+
+    area.scrollIntoView({
+        behavior: "smooth"
+    });
+
+}
+
+
+
+/* =========================
+   MOSTRAR NÚMERO DE PÁGINAS
+========================= */
+
+async function mostrarNumeroPaginas() {
+
+    const archivo =
+        document.getElementById("splitFile").files[0];
+
+
+    const pageInfo =
+        document.getElementById("pageInfo");
+
+
+    if (!archivo) {
+
+        pageInfo.textContent = "";
+
+        return;
+
+    }
+
+
+    try {
+
+        const bytes =
+            await archivo.arrayBuffer();
+
+
+        const pdf =
+            await PDFLib.PDFDocument.load(bytes);
+
+
+        const total =
+            pdf.getPageCount();
+
+
+        pageInfo.textContent =
+            "📄 Este PDF tiene " +
+            total +
+            " páginas.";
+
+    } catch (error) {
+
+        pageInfo.textContent =
+            "❌ No se pudo leer el PDF.";
+
+    }
+
+}
+
+
+
+/* =========================
+   DIVIDIR PDF
+========================= */
+
+async function dividirPDF() {
+
+    const archivo =
+        document.getElementById("splitFile").files[0];
+
+
+    const rangos =
+        document.getElementById("pageRanges")
+        .value.trim();
+
+
+    const status =
+        document.getElementById("splitStatus");
+
+
+    if (!archivo) {
+
+        status.textContent =
+            "⚠️ Selecciona un archivo PDF.";
+
+        return;
+
+    }
+
+
+    if (!rangos) {
+
+        status.textContent =
+            "⚠️ Escribe las páginas que quieres extraer.";
+
+        return;
+
+    }
+
+
+    try {
+
+        status.textContent =
+            "⏳ Procesando PDF...";
+
+
+        const bytes =
+            await archivo.arrayBuffer();
+
+
+        const pdfOriginal =
+            await PDFLib.PDFDocument.load(bytes);
+
+
+        const totalPaginas =
+            pdfOriginal.getPageCount();
+
+
+        const paginasSeleccionadas =
+            interpretarPaginas(
+                rangos,
+                totalPaginas
+            );
+
+
+        if (paginasSeleccionadas.length === 0) {
+
+            status.textContent =
+                "❌ No se encontraron páginas válidas.";
+
+            return;
+
+        }
+
+
+        const pdfNuevo =
+            await PDFLib.PDFDocument.create();
+
+
+        const paginas =
+            await pdfNuevo.copyPages(
+                pdfOriginal,
+                paginasSeleccionadas
+            );
+
+
+        paginas.forEach(
+            pagina => pdfNuevo.addPage(pagina)
+        );
+
+
+        const resultado =
+            await pdfNuevo.save();
+
+
+        const blob =
+            new Blob(
+                [resultado],
+                {
+                    type: "application/pdf"
+                }
+            );
+
+
+        const url =
+            URL.createObjectURL(blob);
+
+
+        const enlace =
+            document.createElement("a");
+
+
+        enlace.href = url;
+
+
+        enlace.download =
+            "PDF-dividido.pdf";
+
+
+        enlace.textContent =
+            "⬇️ Descargar PDF dividido";
+
+
+        enlace.style.display =
+            "inline-block";
+
+        enlace.style.marginTop =
+            "15px";
+
+        enlace.style.textDecoration =
+            "none";
+
+        enlace.style.background =
+            "#16a34a";
+
+        enlace.style.color =
+            "white";
+
+        enlace.style.padding =
+            "12px 20px";
+
+        enlace.style.borderRadius =
+            "8px";
+
+
+        status.innerHTML =
+            "✅ ¡PDF dividido correctamente!<br>";
+
+
+        status.appendChild(enlace);
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        status.textContent =
+            "❌ Revisa las páginas que escribiste.";
+
+    }
+
+}
+
+
+
+/* =========================
+   INTERPRETAR PÁGINAS
+========================= */
+
+function interpretarPaginas(texto, totalPaginas) {
+
+    const paginas = [];
+
+
+    const partes =
+        texto.split(",");
+
+
+    partes.forEach(parte => {
+
+        parte = parte.trim();
+
+
+        if (parte.includes("-")) {
+
+            const rango =
+                parte.split("-");
+
+
+            let inicio =
+                parseInt(rango[0]);
+
+
+            let fin =
+                parseInt(rango[1]);
+
+
+            if (
+                !isNaN(inicio) &&
+                !isNaN(fin)
+            ) {
+
+                if (inicio > fin) {
+
+                    const temporal =
+                        inicio;
+
+                    inicio = fin;
+
+                    fin = temporal;
+
+                }
+
+
+                for (
+                    let pagina = inicio;
+                    pagina <= fin;
+                    pagina++
+                ) {
+
+                    if (
+                        pagina >= 1 &&
+                        pagina <= totalPaginas
+                    ) {
+
+                        paginas.push(
+                            pagina - 1
+                        );
+
+                    }
+
+                }
+
+            }
+
+        } else {
+
+            const pagina =
+                parseInt(parte);
+
+
+            if (
+                !isNaN(pagina) &&
+                pagina >= 1 &&
+                pagina <= totalPaginas
+            ) {
+
+                paginas.push(
+                    pagina - 1
+                );
+
+            }
+
+        }
+
+    });
+
+
+    return [
+        ...new Set(paginas)
+    ];
+
+}
+
 </script>
+
 
 </body>
 </html>
