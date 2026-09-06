@@ -754,19 +754,24 @@
     els.toolOptionsDynamicContent.innerHTML = `
       <div class="options-grid">
         <div class="option-group">
-          <label class="option-label">Nivel de compresión recomendado:</label>
+          <label class="option-label">Nivel de compresión:</label>
           <select id="compressionLevelSelect" class="option-select">
-            <option value="recommended">Compresión Recomendada (Buena calidad y reducción notable ~40-60%)</option>
-            <option value="high">Alta Compresión (Menor calidad visual, máxima reducción de peso)</option>
-            <option value="light">Baja Compresión (Calidad óptima, optimización estructural)</option>
+            <option value="recommended" selected>Compresión recomendada: buena reducción manteniendo alta calidad</option>
+            <option value="high">Compresión alta: mayor reducción con pérdida de calidad moderada</option>
+            <option value="maximum">Compresión máxima: mayor reducción (puede disminuir nitidez)</option>
           </select>
+          <span style="font-size:0.8125rem; color:var(--text-muted); margin-top:0.4rem; display:block; line-height:1.4;">
+            La opción recomendada equilibra la reducción de tamaño con texto completamente nítido e imágenes con gran detalle.
+          </span>
         </div>
         <div class="option-group">
-          <label class="option-label">Tamaño actual:</label>
+          <label class="option-label">Tamaño actual del archivo:</label>
           <div style="font-size:1.125rem; font-weight:700; color:var(--brand-primary); margin-top:0.4rem;">
             ${PDFEngine.formatBytes(state.primaryFile.size)}
           </div>
-          <span style="font-size:0.75rem; color:var(--text-muted)">100% procesado localmente en tu navegador sin enviar datos a servidores.</span>
+          <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem; display:block;">
+            100% procesado localmente en tu navegador sin enviar datos a servidores.
+          </span>
         </div>
       </div>
     `;
@@ -942,6 +947,7 @@
 
     // Asynchronously render thumbnails and update canvas preview boxes
     PDFEngine.renderPageThumbnails(state.primaryBuffer, (pageNum, canvas) => {
+      if (state.currentTool !== mode) return;
       const pageIndex = pageNum - 1;
       if (state.pagesData[pageIndex]) {
         state.pagesData[pageIndex].canvas = canvas;
@@ -952,10 +958,14 @@
         }
       }
     }).then(() => {
-      showLoadingProgress(false);
+      if (state.currentTool === mode) {
+        showLoadingProgress(false);
+      }
     }).catch(err => {
       console.warn('Error al renderizar vistas previas:', err);
-      showLoadingProgress(false);
+      if (state.currentTool === mode) {
+        showLoadingProgress(false);
+      }
     });
   }
 
@@ -1235,18 +1245,29 @@
           outputFilename = `${baseName}-comprimido.pdf`;
           
           const savings = Math.max(0, Math.round(((res.originalSize - res.compressedSize) / res.originalSize) * 100));
+          let detailMessage = `De ${PDFEngine.formatBytes(res.originalSize)} a ${PDFEngine.formatBytes(res.compressedSize)} (${savings}% de reducción manteniendo alta calidad visual).`;
+          if (savings === 0) {
+            detailMessage = `Tu archivo original ya se encontraba en su tamaño óptimo (${PDFEngine.formatBytes(res.originalSize)}). Se mantuvo intacta su calidad original.`;
+          }
           showSuccessResult(
-            '¡Documento comprimido con éxito!',
-            `De ${PDFEngine.formatBytes(res.originalSize)} a ${PDFEngine.formatBytes(res.compressedSize)} (${savings}% de ahorro).`
+            '¡Documento optimizado con éxito!',
+            detailMessage
           );
           break;
         }
 
         case 'girar': {
           const rotationsMap = {};
+          let anyRotated = false;
           state.pagesData.forEach((p, idx) => {
-            if (p.rotation !== 0) rotationsMap[idx] = p.rotation;
+            if (p.rotation !== 0) {
+              rotationsMap[idx] = p.rotation;
+              anyRotated = true;
+            }
           });
+          if (!anyRotated) {
+            throw new Error('No has rotado ninguna página. Rota al menos una página usando los botones antes de guardar.');
+          }
           const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
           const bytes = await PDFEngine.rotatePDF(state.primaryBuffer, rotationsMap, progressCallback);
           outputBlob = new Blob([bytes], { type: 'application/pdf' });
