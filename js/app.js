@@ -173,7 +173,7 @@
   const els = {
     themeToggleBtn: document.getElementById('themeToggleBtn'),
     heroSection: document.getElementById('heroSection'),
-    toolsSection: document.getElementById('toolsSection'),
+    toolsSection: document.getElementById('herramientas') || document.getElementById('toolsSection'),
     workspaceSection: document.getElementById('workspaceSection'),
     backToToolsBtn: document.getElementById('backToToolsBtn'),
     toolsGrid: document.getElementById('toolsGrid'),
@@ -341,10 +341,10 @@
         : 'o selecciona un archivo PDF desde tu dispositivo';
     }
 
-    // Hide hero & tools list, show workspace
-    els.heroSection.style.display = 'none';
-    els.toolsSection.style.display = 'none';
-    els.workspaceSection.style.display = 'block';
+    // Hide hero & tools list, show workspace safely
+    if (els.heroSection) els.heroSection.style.display = 'none';
+    if (els.toolsSection) els.toolsSection.style.display = 'none';
+    if (els.workspaceSection) els.workspaceSection.style.display = 'block';
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
     history.pushState(null, '', `#${toolId}`);
@@ -355,12 +355,13 @@
     state.currentTool = null;
     resetToolWorkspace();
 
-    els.heroSection.style.display = 'block';
-    els.toolsSection.style.display = 'block';
-    els.workspaceSection.style.display = 'none';
+    if (els.heroSection) els.heroSection.style.display = 'block';
+    if (els.toolsSection) els.toolsSection.style.display = 'block';
+    if (els.workspaceSection) els.workspaceSection.style.display = 'none';
 
     history.pushState(null, '', window.location.pathname);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    refreshLucideIcons();
   }
 
   function resetToolWorkspace() {
@@ -376,25 +377,54 @@
     state.isProcessing = false;
 
     // Reset UI blocks
-    els.uploadDropzone.style.display = 'block';
-    els.fileDetailsBar.style.display = 'none';
-    els.multiFilesContainer.style.display = 'none';
-    els.multiFilesList.innerHTML = '';
-    els.toolOptionsPanel.style.display = 'none';
-    els.toolOptionsDynamicContent.innerHTML = '';
-    els.pageThumbnailsWrapper.style.display = 'none';
-    els.pageGrid.innerHTML = '';
-    els.processingStatusArea.style.display = 'none';
-    els.resultSuccessBox.style.display = 'none';
-    els.btnExecuteTool.disabled = true;
-    els.fileInput.value = '';
+    if (els.uploadDropzone) els.uploadDropzone.style.display = 'block';
+    if (els.fileDetailsBar) els.fileDetailsBar.style.display = 'none';
+    if (els.multiFilesContainer) els.multiFilesContainer.style.display = 'none';
+    if (els.multiFilesList) els.multiFilesList.innerHTML = '';
+    if (els.toolOptionsPanel) els.toolOptionsPanel.style.display = 'none';
+    if (els.toolOptionsDynamicContent) els.toolOptionsDynamicContent.innerHTML = '';
+    if (els.pageThumbnailsWrapper) els.pageThumbnailsWrapper.style.display = 'none';
+    if (els.pageGrid) els.pageGrid.innerHTML = '';
+    if (els.processingStatusArea) els.processingStatusArea.style.display = 'none';
+    if (els.resultSuccessBox) els.resultSuccessBox.style.display = 'none';
+    if (els.btnExecuteTool) {
+      els.btnExecuteTool.style.display = 'inline-flex';
+      els.btnExecuteTool.disabled = true;
+      if (state.currentTool && TOOLS[state.currentTool]) {
+        els.btnExecuteTool.textContent = TOOLS[state.currentTool].actionBtnText;
+      }
+    }
+    if (els.fileInput) els.fileInput.value = '';
     if (els.moreFileInput) els.moreFileInput.value = '';
   }
 
   // --- FILE HANDLING & DRAG AND DROP ---
   function setupEventListeners() {
     // Navigation back button
-    els.backToToolsBtn.addEventListener('click', closeTool);
+    if (els.backToToolsBtn) {
+      els.backToToolsBtn.addEventListener('click', closeTool);
+    }
+
+    // Header navigation shortcuts
+    const navHerramientas = document.getElementById('navLinkHerramientas');
+    if (navHerramientas) {
+      navHerramientas.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeTool();
+        const target = document.getElementById('herramientas');
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+
+    const navVentajas = document.getElementById('navLinkVentajas');
+    if (navVentajas) {
+      navVentajas.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeTool();
+        const target = document.getElementById('ventajas');
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
 
     // Filter buttons
     els.filterBtns.forEach(btn => {
@@ -431,6 +461,7 @@
     });
 
     dropzone.addEventListener('click', () => {
+      els.fileInput.value = '';
       els.fileInput.click();
     });
 
@@ -442,6 +473,7 @@
 
     // Change / Clear file buttons
     els.btnChangeFile.addEventListener('click', () => {
+      els.fileInput.value = '';
       els.fileInput.click();
     });
 
@@ -453,6 +485,7 @@
     // Add more files button (for Merge PDF / JPG to PDF)
     if (els.btnAddMoreFiles && els.moreFileInput) {
       els.btnAddMoreFiles.addEventListener('click', () => {
+        els.moreFileInput.value = '';
         els.moreFileInput.click();
       });
       els.moreFileInput.addEventListener('change', (e) => {
@@ -521,7 +554,13 @@
 
       els.uploadDropzone.style.display = 'none';
       els.fileDetailsBar.style.display = 'flex';
-      els.btnExecuteTool.disabled = false;
+
+      // Set initial state of execute button depending on tool requirements
+      if (state.currentTool === 'eliminar' || state.currentTool === 'extraer' || state.currentTool === 'anadir') {
+        els.btnExecuteTool.disabled = true;
+      } else {
+        els.btnExecuteTool.disabled = false;
+      }
 
       // Render tool specific options and preview
       await setupToolSpecificWorkspace();
@@ -628,8 +667,12 @@
 
       el.querySelector('.btn-remove-file').addEventListener('click', () => {
         state.filesList.splice(index, 1);
-        renderMultiFilesList();
-        els.btnExecuteTool.disabled = state.currentTool === 'unir' ? (state.filesList.length < 2) : (state.filesList.length === 0);
+        if (state.filesList.length === 0) {
+          resetToolWorkspace();
+        } else {
+          renderMultiFilesList();
+          els.btnExecuteTool.disabled = state.currentTool === 'unir' ? (state.filesList.length < 2) : (state.filesList.length === 0);
+        }
       });
 
       els.multiFilesList.appendChild(el);
@@ -817,12 +860,18 @@
     const btnSelect = document.getElementById('btnSelectSecondaryFile');
     const nameLabel = document.getElementById('secondaryFileName');
 
-    btnSelect.addEventListener('click', () => secInput.click());
+    els.btnExecuteTool.disabled = !state.secondaryFile;
+
+    btnSelect.addEventListener('click', () => {
+      secInput.value = '';
+      secInput.click();
+    });
     secInput.addEventListener('change', async (e) => {
       if (e.target.files && e.target.files.length > 0) {
         state.secondaryFile = e.target.files[0];
         state.secondaryBuffer = await state.secondaryFile.arrayBuffer();
         nameLabel.textContent = `✓ ${state.secondaryFile.name} (${PDFEngine.formatBytes(state.secondaryFile.size)})`;
+        els.btnExecuteTool.disabled = false;
         showToast('Documento secundario listo para insertar', 'success');
       }
     });
@@ -886,18 +935,38 @@
       });
     }
 
-    // Render pages using PDF.js
-    await PDFEngine.renderPageThumbnails(state.primaryBuffer, (pageNum, canvas) => {
-      const pageIndex = pageNum - 1;
-      if (state.pagesData[pageIndex]) {
-        state.pagesData[pageIndex].canvas = canvas;
-      }
-    });
-
+    // Render placeholder cards immediately for instant interaction
     renderThumbnailsGrid(mode);
     updateThumbnailsToolbar(mode);
     setupThumbnailToolbarListeners(mode);
-    showLoadingProgress(false);
+
+    // Asynchronously render thumbnails and update canvas preview boxes
+    PDFEngine.renderPageThumbnails(state.primaryBuffer, (pageNum, canvas) => {
+      const pageIndex = pageNum - 1;
+      if (state.pagesData[pageIndex]) {
+        state.pagesData[pageIndex].canvas = canvas;
+        const box = document.getElementById(`canvas-box-${state.pagesData[pageIndex].originalIndex}`);
+        if (box) {
+          box.innerHTML = '';
+          box.appendChild(cloneCanvas(canvas));
+        }
+      }
+    }).then(() => {
+      showLoadingProgress(false);
+    }).catch(err => {
+      console.warn('Error al renderizar vistas previas:', err);
+      showLoadingProgress(false);
+    });
+  }
+
+  function cloneCanvas(oldCanvas) {
+    if (!oldCanvas) return null;
+    const newCanvas = document.createElement('canvas');
+    newCanvas.width = oldCanvas.width;
+    newCanvas.height = oldCanvas.height;
+    const ctx = newCanvas.getContext('2d');
+    ctx.drawImage(oldCanvas, 0, 0);
+    return newCanvas;
   }
 
   function renderThumbnailsGrid(mode) {
@@ -917,12 +986,13 @@
       // Canvas preview box with rotation transform
       const canvasBox = document.createElement('div');
       canvasBox.className = 'thumbnail-canvas-box';
+      canvasBox.id = `canvas-box-${pageItem.originalIndex}`;
       if (pageItem.rotation !== 0) {
         canvasBox.style.transform = `rotate(${pageItem.rotation}deg)`;
       }
 
       if (pageItem.canvas) {
-        canvasBox.appendChild(pageItem.canvas.cloneNode(true));
+        canvasBox.appendChild(cloneCanvas(pageItem.canvas));
       } else {
         canvasBox.innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted)">Pág. ' + pageItem.pageNum + '</span>';
       }

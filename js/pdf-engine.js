@@ -250,9 +250,10 @@ const PDFEngine = {
         viewport: viewport
       }).promise;
 
-      // Convert canvas to JPEG blob
-      const jpegDataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
-      const embeddedImage = await compressedPdf.embedJpg(jpegDataUrl);
+      // Convert canvas to JPEG buffer safely
+      const jpegBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', jpegQuality));
+      const jpegBuffer = await jpegBlob.arrayBuffer();
+      const embeddedImage = await compressedPdf.embedJpg(jpegBuffer);
 
       // Add page with original viewport dimensions (in standard PDF points: 72 dpi)
       const baseViewport = page.getViewport({ scale: 1.0 });
@@ -335,37 +336,49 @@ const PDFEngine = {
       let embeddedImage;
       let imgWidth, imgHeight;
 
-      if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
-        embeddedImage = await pdfDoc.embedJpg(buffer);
-        imgWidth = embeddedImage.width;
-        imgHeight = embeddedImage.height;
-      } else {
-        // PNG or other: convert or embed PNG
+      const isJpeg = file.type === 'image/jpeg' || file.type === 'image/jpg' || file.name.toLowerCase().endsWith('.jpg') || file.name.toLowerCase().endsWith('.jpeg');
+      if (isJpeg) {
+        try {
+          embeddedImage = await pdfDoc.embedJpg(buffer);
+          imgWidth = embeddedImage.width;
+          imgHeight = embeddedImage.height;
+        } catch (e) {
+          // Fallback via Image & Canvas
+          embeddedImage = null;
+        }
+      } else if (file.type === 'image/png' || file.name.toLowerCase().endsWith('.png')) {
         try {
           embeddedImage = await pdfDoc.embedPng(buffer);
           imgWidth = embeddedImage.width;
           imgHeight = embeddedImage.height;
         } catch (e) {
-          // Fallback via Image & Canvas
-          const dataUrl = await new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.width;
-              canvas.height = img.height;
-              const ctx = canvas.getContext('2d');
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(img, 0, 0);
-              resolve(canvas.toDataURL('image/jpeg', 0.9));
-            };
-            img.onerror = reject;
-            img.src = URL.createObjectURL(file);
-          });
-          embeddedImage = await pdfDoc.embedJpg(dataUrl);
-          imgWidth = embeddedImage.width;
-          imgHeight = embeddedImage.height;
+          embeddedImage = null;
         }
+      }
+
+      // If not embedded yet (WebP, unsupported color format, or corrupt metadata), re-encode with Canvas
+      if (!embeddedImage) {
+        const imageBuffer = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob(async (blob) => {
+              const buf = await blob.arrayBuffer();
+              resolve(buf);
+            }, 'image/jpeg', 0.92);
+          };
+          img.onerror = reject;
+          img.src = URL.createObjectURL(file);
+        });
+        embeddedImage = await pdfDoc.embedJpg(imageBuffer);
+        imgWidth = embeddedImage.width;
+        imgHeight = embeddedImage.height;
       }
 
       let pageWidth, pageHeight, drawX, drawY, drawW, drawH;
@@ -574,18 +587,18 @@ const PDFEngine = {
       const addPdf = await PDFLib.PDFDocument.load(additionalBuffer, { ignoreEncryption: true });
       pagesToInsert = await finalPdf.copyPages(addPdf, addPdf.getPageIndices());
     } else {
-      // It is an image: embed into a single page
+      // It is an image: embed into a single page via temporary document
       if (onProgress) onProgress(40, "Insertando imagen...");
+      const tempImgDoc = await PDFLib.PDFDocument.create();
       let img;
       try {
-        img = await finalPdf.embedJpg(additionalBuffer);
+        img = await tempImgDoc.embedJpg(additionalBuffer);
       } catch (e) {
-        img = await finalPdf.embedPng(additionalBuffer);
+        img = await tempImgDoc.embedPng(additionalBuffer);
       }
-      const page = finalPdf.addPage([img.width, img.height]);
+      const page = tempImgDoc.addPage([img.width, img.height]);
       page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
-      // remove from finalPdf for ordered placement
-      pagesToInsert = [page];
+      pagesToInsert = await finalPdf.copyPages(tempImgDoc, [0]);
     }
 
     if (onProgress) onProgress(60, "Copiando páginas del documento base...");

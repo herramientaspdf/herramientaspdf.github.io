@@ -29,7 +29,7 @@
        ========================================================================= -->
   <header class="site-header" id="mainHeader">
     <div class="container header-inner">
-      <a href="#" class="logo-brand" id="brandLogo" onclick="window.location.hash=''; location.reload(); return false;">
+      <a href="#" class="logo-brand" id="brandLogo" onclick="if(window.closeTool){window.closeTool();} window.scrollTo({top:0, behavior:'smooth'}); return false;">
         <div class="logo-icon">
           <i data-lucide="file-text"></i>
         </div>
@@ -38,8 +38,8 @@
 
       <nav>
         <ul class="nav-menu">
-          <li><a href="#herramientas" class="nav-link"><i data-lucide="grid"></i> Herramientas</a></li>
-          <li><a href="#ventajas" class="nav-link"><i data-lucide="sparkles"></i> Ventajas</a></li>
+          <li><a href="#herramientas" class="nav-link" id="navLinkHerramientas"><i data-lucide="grid"></i> Herramientas</a></li>
+          <li><a href="#ventajas" class="nav-link" id="navLinkVentajas"><i data-lucide="sparkles"></i> Ventajas</a></li>
           <li><a href="#acerca" class="nav-link nav-link-about"><i data-lucide="info"></i> Acerca de</a></li>
           <li><a href="#privacidad" class="nav-link nav-link-privacy"><i data-lucide="shield-check"></i> Privacidad</a></li>
         </ul>
@@ -344,20 +344,22 @@
         <div class="footer-col">
           <h4>Organizar</h4>
           <ul class="footer-links">
-            <li><a href="#unir" onclick="openTool('unir')">Unir PDF</a></li>
-            <li><a href="#dividir" onclick="openTool('dividir')">Dividir PDF</a></li>
-            <li><a href="#ordenar" onclick="openTool('ordenar')">Ordenar páginas</a></li>
-            <li><a href="#anadir" onclick="openTool('anadir')">Añadir páginas</a></li>
+            <li><a href="#unir" onclick="if(window.openTool){window.openTool('unir');} return false;">Unir PDF</a></li>
+            <li><a href="#dividir" onclick="if(window.openTool){window.openTool('dividir');} return false;">Dividir PDF</a></li>
+            <li><a href="#ordenar" onclick="if(window.openTool){window.openTool('ordenar');} return false;">Ordenar páginas</a></li>
+            <li><a href="#anadir" onclick="if(window.openTool){window.openTool('anadir');} return false;">Añadir páginas</a></li>
+            <li><a href="#eliminar" onclick="if(window.openTool){window.openTool('eliminar');} return false;">Eliminar páginas</a></li>
+            <li><a href="#extraer" onclick="if(window.openTool){window.openTool('extraer');} return false;">Extraer páginas</a></li>
           </ul>
         </div>
 
         <div class="footer-col">
           <h4>Optimizar & Convertir</h4>
           <ul class="footer-links">
-            <li><a href="#comprimir" onclick="openTool('comprimir')">Comprimir PDF</a></li>
-            <li><a href="#girar" onclick="openTool('girar')">Girar PDF</a></li>
-            <li><a href="#jpg2pdf" onclick="openTool('jpg2pdf')">JPG a PDF</a></li>
-            <li><a href="#pdf2jpg" onclick="openTool('pdf2jpg')">PDF a JPG</a></li>
+            <li><a href="#comprimir" onclick="if(window.openTool){window.openTool('comprimir');} return false;">Comprimir PDF</a></li>
+            <li><a href="#girar" onclick="if(window.openTool){window.openTool('girar');} return false;">Girar PDF</a></li>
+            <li><a href="#jpg2pdf" onclick="if(window.openTool){window.openTool('jpg2pdf');} return false;">JPG a PDF</a></li>
+            <li><a href="#pdf2jpg" onclick="if(window.openTool){window.openTool('pdf2jpg');} return false;">PDF a JPG</a></li>
           </ul>
         </div>
 
@@ -366,7 +368,7 @@
           <ul class="footer-links">
             <li><a href="#acerca" class="footer-link-about">Acerca del proyecto</a></li>
             <li><a href="#privacidad" class="footer-link-privacy">Política de privacidad</a></li>
-            <li><a href="#ventajas">Ventajas técnicas</a></li>
+            <li><a href="#ventajas" onclick="if(window.closeTool){window.closeTool();}">Ventajas técnicas</a></li>
           </ul>
         </div>
       </div>
