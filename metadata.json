@@ -1,0 +1,6 @@
+{
+  "name": "Herramientas PDF",
+  "description": "Suite completa de herramientas PDF gratuitas: unir, dividir, comprimir, girar, convertir JPG/PDF, eliminar, extraer, ordenar y añadir páginas directamente en tu navegador.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
