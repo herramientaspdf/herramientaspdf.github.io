@@ -1,50 +1,43 @@
 /**
  * ============================================================================
- * HERRAMIENTAS PDF - APPLICATION CONTROLLER
- * Gestión de interfaz, herramientas activas, drag & drop, renderizado visual.
+ * HERRAMIENTAS PDF - MAIN APPLICATION CONTROLLER
+ * Solo 4 herramientas esenciales:
+ * 1. UNIR PDF
+ * 2. DIVIDIR PDF
+ * 3. JPG A PDF
+ * 4. COMPRIMIR PDF
+ * 
+ * 100% Procesamiento Local en el Navegador con PDF-Lib y PDF.js
  * ============================================================================
  */
 
 (function () {
   'use strict';
 
-  // --- STATE ---
+  // --- APPLICATION STATE ---
   const state = {
+    theme: localStorage.getItem('theme') || 'light',
     currentTool: null,
-    theme: localStorage.getItem('pdf_tools_theme') || 'light',
-    
-    // Single file operations
+    // For single file tools (dividir, comprimir)
     primaryFile: null,
-    primaryBuffer: null,
+    primaryFileBuffer: null,
     primaryPdfInfo: null,
-    
-    // Multi-file operations (Unir PDF, JPG a PDF)
-    filesList: [], // array of { file, buffer, info }
-    
-    // Secondary file for "Añadir páginas"
-    secondaryFile: null,
-    secondaryBuffer: null,
-    secondaryPdfInfo: null,
-    
-    // Visual Pages metadata for rotate, delete, extract, order
-    pagesData: [], // array of { pageNum: 1, originalIndex: 0, rotation: 0, selected: false, canvas: null }
-    
-    // Processing / Output
-    isProcessing: false,
-    lastResultBlob: null,
-    lastResultFilename: '',
+    // For multi file tools (unir, jpg2pdf)
+    filesList: [], // { id, file, buffer, info, previewUrl }
+    // Processing results
+    currentResultBlob: null,
+    lastResultFilename: ''
   };
 
-  // --- TOOLS DEFINITION ---
+  // --- 4 HERRAMIENTAS DEFINITION ---
   const TOOLS = {
     unir: {
       id: 'unir',
       name: 'Unir PDF',
       badge: 'Popular',
       iconClass: 'tool-icon-blue',
-      iconEmoji: '📎',
       lucideIcon: 'files',
-      desc: 'Combina múltiples documentos PDF en un solo archivo en el orden que tú decidas.',
+      desc: 'Combina múltiples documentos PDF en un solo archivo organizado en el orden que tú decidas.',
       category: 'organizar',
       accept: '.pdf,application/pdf',
       multiple: true,
@@ -55,1391 +48,1211 @@
       name: 'Dividir PDF',
       badge: 'Popular',
       iconClass: 'tool-icon-rose',
-      iconEmoji: '✂️',
-      lucideIcon: 'split',
-      desc: 'Extrae rangos de páginas o divide cada página en un documento individual.',
+      lucideIcon: 'scissors',
+      desc: 'Extrae páginas individuales o rangos específicos (ej. 1, 1-3, 1,3,5 o 2-4,7) para crear un nuevo PDF.',
       category: 'organizar',
       accept: '.pdf,application/pdf',
       multiple: false,
       actionBtnText: 'Dividir PDF'
-    },
-    comprimir: {
-      id: 'comprimir',
-      name: 'Comprimir PDF',
-      badge: 'Optimización',
-      iconClass: 'tool-icon-green',
-      iconEmoji: '🗜️',
-      lucideIcon: 'minimize-2',
-      desc: 'Reduce el peso de tus archivos PDF manteniendo la mejor calidad visual en tu navegador.',
-      category: 'optimizar',
-      accept: '.pdf,application/pdf',
-      multiple: false,
-      actionBtnText: 'Comprimir PDF'
-    },
-    girar: {
-      id: 'girar',
-      name: 'Girar PDF',
-      badge: 'Páginas',
-      iconClass: 'tool-icon-amber',
-      iconEmoji: '🔄',
-      lucideIcon: 'rotate-cw',
-      desc: 'Rota todas las páginas o páginas individuales en incrementos de 90° con vista previa.',
-      category: 'editar',
-      accept: '.pdf,application/pdf',
-      multiple: false,
-      actionBtnText: 'Guardar y rotar PDF'
     },
     jpg2pdf: {
       id: 'jpg2pdf',
       name: 'JPG a PDF',
       badge: 'Convertidor',
       iconClass: 'tool-icon-purple',
-      iconEmoji: '🖼️',
       lucideIcon: 'image',
-      desc: 'Convierte imágenes JPG, PNG o WebP en documentos PDF de alta calidad con márgenes personalizados.',
-      category: 'optimizar',
+      desc: 'Convierte una o varias imágenes JPG o JPEG en un documento PDF de alta calidad con márgenes personalizados.',
+      category: 'convertir',
       accept: 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp',
       multiple: true,
-      actionBtnText: 'Convertir imágenes a PDF'
+      actionBtnText: 'Convertir a PDF'
     },
-    pdf2jpg: {
-      id: 'pdf2jpg',
-      name: 'PDF a JPG',
-      badge: 'Convertidor',
-      iconClass: 'tool-icon-cyan',
-      iconEmoji: '📄',
-      lucideIcon: 'file-image',
-      desc: 'Convierte cada página de tu documento PDF en imágenes JPG de alta resolución o descárgalas en ZIP.',
+    comprimir: {
+      id: 'comprimir',
+      name: 'Comprimir PDF',
+      badge: 'Optimización',
+      iconClass: 'tool-icon-green',
+      lucideIcon: 'minimize-2',
+      desc: 'Reduce el peso de tu archivo PDF manteniendo la máxima nitidez visual en textos y gráficos sin compresión excesiva.',
       category: 'optimizar',
       accept: '.pdf,application/pdf',
       multiple: false,
-      actionBtnText: 'Convertir PDF a JPG'
-    },
-    eliminar: {
-      id: 'eliminar',
-      name: 'Eliminar páginas',
-      badge: 'Páginas',
-      iconClass: 'tool-icon-rose',
-      iconEmoji: '🗑️',
-      lucideIcon: 'file-minus',
-      desc: 'Selecciona visualmente las páginas innecesarias de tu PDF y elimínalas al instante.',
-      category: 'editar',
-      accept: '.pdf,application/pdf',
-      multiple: false,
-      actionBtnText: 'Eliminar páginas seleccionadas'
-    },
-    extraer: {
-      id: 'extraer',
-      name: 'Extraer páginas',
-      badge: 'Páginas',
-      iconClass: 'tool-icon-indigo',
-      iconEmoji: '📑',
-      lucideIcon: 'file-plus',
-      desc: 'Elige visualmente solo las páginas que necesitas para crear un documento nuevo y limpio.',
-      category: 'editar',
-      accept: '.pdf,application/pdf',
-      multiple: false,
-      actionBtnText: 'Extraer páginas'
-    },
-    ordenar: {
-      id: 'ordenar',
-      name: 'Ordenar páginas',
-      badge: 'Organizar',
-      iconClass: 'tool-icon-teal',
-      iconEmoji: '🔢',
-      lucideIcon: 'arrow-down-up',
-      desc: 'Reordena, mueve y organiza las páginas de tu archivo PDF en la posición exacta que desees.',
-      category: 'organizar',
-      accept: '.pdf,application/pdf',
-      multiple: false,
-      actionBtnText: 'Guardar nuevo orden'
-    },
-    anadir: {
-      id: 'anadir',
-      name: 'Añadir páginas a PDF',
-      badge: 'Organizar',
-      iconClass: 'tool-icon-orange',
-      iconEmoji: '➕',
-      lucideIcon: 'layers',
-      desc: 'Inserta páginas adicionales de otro PDF o imágenes al inicio, al final o entre páginas.',
-      category: 'organizar',
-      accept: '.pdf,application/pdf',
-      multiple: false,
-      actionBtnText: 'Insertar páginas y descargar'
+      actionBtnText: 'Comprimir PDF'
     }
   };
 
   // --- DOM ELEMENTS ---
   const els = {
     themeToggleBtn: document.getElementById('themeToggleBtn'),
-    heroSection: document.getElementById('heroSection'),
-    toolsSection: document.getElementById('herramientas') || document.getElementById('toolsSection'),
+    mobileMenuBtn: document.getElementById('mobileMenuBtn'),
+    navMenu: document.getElementById('navMenu'),
+    heroSection: document.getElementById('inicio'),
+    toolsSection: document.getElementById('herramientas'),
     workspaceSection: document.getElementById('workspaceSection'),
     backToToolsBtn: document.getElementById('backToToolsBtn'),
+    btnResetTool: document.getElementById('btnResetTool'),
     toolsGrid: document.getElementById('toolsGrid'),
-    filterBtns: document.querySelectorAll('.filter-btn'),
 
-    // Workspace elements
+    // Active tool info in workspace
     activeToolIcon: document.getElementById('activeToolIcon'),
     activeToolName: document.getElementById('activeToolName'),
     activeToolDesc: document.getElementById('activeToolDesc'),
+
+    // Dropzone
     uploadDropzone: document.getElementById('uploadDropzone'),
-    fileInput: document.getElementById('fileInput'),
     dropzoneText: document.getElementById('dropzoneText'),
-    
-    // File details bar
+    fileInput: document.getElementById('fileInput'),
+
+    // Single file bar
     fileDetailsBar: document.getElementById('fileDetailsBar'),
     fileMainName: document.getElementById('fileMainName'),
     fileSubStats: document.getElementById('fileSubStats'),
     btnChangeFile: document.getElementById('btnChangeFile'),
     btnClearFile: document.getElementById('btnClearFile'),
 
-    // Multi-files list
+    // Multi-file container
     multiFilesContainer: document.getElementById('multiFilesContainer'),
     multiFilesList: document.getElementById('multiFilesList'),
     btnAddMoreFiles: document.getElementById('btnAddMoreFiles'),
     moreFileInput: document.getElementById('moreFileInput'),
 
-    // Options & Controls
+    // Options panel
     toolOptionsPanel: document.getElementById('toolOptionsPanel'),
     toolOptionsDynamicContent: document.getElementById('toolOptionsDynamicContent'),
 
-    // Page Thumbnails Grid
-    pageThumbnailsWrapper: document.getElementById('pageThumbnailsWrapper'),
-    thumbnailsStats: document.getElementById('thumbnailsStats'),
-    thumbnailsActions: document.getElementById('thumbnailsActions'),
-    pageGrid: document.getElementById('pageGrid'),
-
-    // Progress
+    // Progress & status
     processingStatusArea: document.getElementById('processingStatusArea'),
     progressBarFill: document.getElementById('progressBarFill'),
     statusMessage: document.getElementById('statusMessage'),
 
-    // Result
+    // Result card
     resultSuccessBox: document.getElementById('resultSuccessBox'),
     resultTitle: document.getElementById('resultTitle'),
     resultDesc: document.getElementById('resultDesc'),
+    resultCustomStats: document.getElementById('resultCustomStats'),
     btnDownloadMain: document.getElementById('btnDownloadMain'),
     btnProcessAnother: document.getElementById('btnProcessAnother'),
 
-    // Main action
+    // Execute button
     btnExecuteTool: document.getElementById('btnExecuteTool'),
 
-    // Modals
-    modalAbout: document.getElementById('modalAbout'),
-    modalPrivacy: document.getElementById('modalPrivacy'),
-    toastContainer: document.getElementById('toastContainer'),
+    // Contact form
+    contactForm: document.getElementById('contactForm'),
+    contactSuccessAlert: document.getElementById('contactSuccessAlert'),
+
+    // Toast container
+    toastContainer: document.getElementById('toastContainer')
   };
 
   // --- INITIALIZATION ---
   function init() {
-    initTheme();
+    setupTheme();
     renderToolsGrid();
     setupEventListeners();
-    refreshLucideIcons();
-
-    // Check URL query param or hash (e.g. #unir or ?tool=comprimir)
-    const hash = window.location.hash.replace('#', '');
-    if (TOOLS[hash]) {
-      openTool(hash);
+    setupMobileMenu();
+    setupContactForm();
+    if (window.lucide) {
+      window.lucide.createIcons();
     }
   }
 
-  // --- THEME ---
-  function initTheme() {
+  // --- THEME MANAGEMENT ---
+  function setupTheme() {
     document.documentElement.setAttribute('data-theme', state.theme);
     updateThemeIcon();
+
     if (els.themeToggleBtn) {
-      els.themeToggleBtn.addEventListener('click', toggleTheme);
+      els.themeToggleBtn.addEventListener('click', () => {
+        state.theme = state.theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('theme', state.theme);
+        document.documentElement.setAttribute('data-theme', state.theme);
+        updateThemeIcon();
+      });
     }
-  }
-
-  function toggleTheme() {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', state.theme);
-    localStorage.setItem('pdf_tools_theme', state.theme);
-    updateThemeIcon();
-    showToast(`Modo ${state.theme === 'dark' ? 'oscuro' : 'claro'} activado`, 'info');
   }
 
   function updateThemeIcon() {
     if (!els.themeToggleBtn) return;
-    if (state.theme === 'dark') {
-      els.themeToggleBtn.innerHTML = '<i data-lucide="sun"></i>';
-      els.themeToggleBtn.title = 'Cambiar a modo claro';
-    } else {
-      els.themeToggleBtn.innerHTML = '<i data-lucide="moon"></i>';
-      els.themeToggleBtn.title = 'Cambiar a modo oscuro';
-    }
-    refreshLucideIcons();
-  }
-
-  function refreshLucideIcons() {
-    if (window.lucide) {
-      lucide.createIcons();
+    const icon = els.themeToggleBtn.querySelector('i');
+    if (icon) {
+      icon.setAttribute('data-lucide', state.theme === 'dark' ? 'sun' : 'moon');
+      if (window.lucide) window.lucide.createIcons();
     }
   }
 
-  // --- RENDER TOOLS GRID ---
-  function renderToolsGrid(category = 'all') {
+  // --- MOBILE MENU ---
+  function setupMobileMenu() {
+    if (els.mobileMenuBtn && els.navMenu) {
+      els.mobileMenuBtn.addEventListener('click', () => {
+        els.navMenu.classList.toggle('active');
+      });
+
+      // Close menu when clicking any nav link
+      els.navMenu.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+          els.navMenu.classList.remove('active');
+        });
+      });
+    }
+  }
+
+  // --- RENDER TOOLS GRID (ONLY 4 TOOLS) ---
+  function renderToolsGrid() {
     if (!els.toolsGrid) return;
     els.toolsGrid.innerHTML = '';
 
-    Object.values(TOOLS).forEach(tool => {
-      if (category !== 'all' && tool.category !== category) return;
+    const toolKeys = ['unir', 'dividir', 'jpg2pdf', 'comprimir'];
+
+    toolKeys.forEach((key, index) => {
+      const tool = TOOLS[key];
+      if (!tool) return;
 
       const card = document.createElement('div');
       card.className = 'tool-card';
       card.id = `tool-card-${tool.id}`;
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+
       card.innerHTML = `
         <div class="tool-card-icon-wrapper ${tool.iconClass}">
           <i data-lucide="${tool.lucideIcon}"></i>
         </div>
         <div class="tool-card-title">
-          <span>${tool.name}</span>
+          <span>${index + 1}. ${tool.name}</span>
           <span class="tool-card-badge">${tool.badge}</span>
         </div>
         <p class="tool-card-desc">${tool.desc}</p>
         <div class="tool-card-footer">
-          <span class="tool-card-badge">Gratis</span>
-          <span class="tool-card-action">Usar herramienta →</span>
+          <span class="tool-card-action">
+            Comenzar <i data-lucide="arrow-right" style="width: 15px; height: 15px;"></i>
+          </span>
         </div>
       `;
 
       card.addEventListener('click', () => openTool(tool.id));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openTool(tool.id);
+        }
+      });
+
       els.toolsGrid.appendChild(card);
     });
 
-    refreshLucideIcons();
+    if (window.lucide) window.lucide.createIcons();
   }
 
-  // --- OPEN / CLOSE TOOL WORKSPACE ---
+  // --- WORKSPACE NAVIGATION ---
   function openTool(toolId) {
     const tool = TOOLS[toolId];
     if (!tool) return;
 
+    // Revoke any existing image object URLs
+    clearImagePreviews();
+
     state.currentTool = toolId;
-    resetToolWorkspace();
+    state.primaryFile = null;
+    state.primaryFileBuffer = null;
+    state.primaryPdfInfo = null;
+    state.filesList = [];
+    state.currentResultBlob = null;
+    state.lastResultFilename = '';
 
-    // Update Header Info
-    els.activeToolName.textContent = tool.name;
-    els.activeToolDesc.textContent = tool.desc;
-    els.activeToolIcon.className = `active-tool-icon ${tool.iconClass}`;
-    els.activeToolIcon.innerHTML = `<i data-lucide="${tool.lucideIcon}"></i>`;
-    els.btnExecuteTool.textContent = tool.actionBtnText;
-    els.btnExecuteTool.disabled = true;
-
-    // File input configuration
-    els.fileInput.accept = tool.accept;
-    els.fileInput.multiple = tool.multiple;
-
-    if (tool.id === 'jpg2pdf') {
-      els.dropzoneText.textContent = 'o selecciona imágenes JPG, PNG o WebP desde tu dispositivo';
-    } else {
-      els.dropzoneText.textContent = tool.multiple
-        ? 'o selecciona dos o más archivos PDF para unirlos'
-        : 'o selecciona un archivo PDF desde tu dispositivo';
+    // Update workspace header info
+    if (els.activeToolName) els.activeToolName.textContent = tool.name;
+    if (els.activeToolDesc) els.activeToolDesc.textContent = tool.desc;
+    if (els.activeToolIcon) {
+      els.activeToolIcon.className = `activeToolIcon ${tool.iconClass}`;
+      els.activeToolIcon.innerHTML = `<i data-lucide="${tool.lucideIcon}"></i>`;
     }
 
-    // Hide hero & tools list, show workspace safely
-    if (els.heroSection) els.heroSection.style.display = 'none';
-    if (els.toolsSection) els.toolsSection.style.display = 'none';
+    // Configure file input accept and multiple
+    if (els.fileInput) {
+      els.fileInput.accept = tool.accept;
+      els.fileInput.multiple = tool.multiple;
+    }
+    if (els.moreFileInput) {
+      els.moreFileInput.accept = tool.accept;
+    }
+
+    // Dropzone text
+    if (els.dropzoneText) {
+      if (tool.id === 'jpg2pdf') {
+        els.dropzoneText.textContent = 'Selecciona una o varias imágenes (JPG, JPEG, PNG o WebP)';
+      } else if (tool.multiple) {
+        els.dropzoneText.textContent = 'Selecciona dos o más documentos PDF para unir';
+      } else {
+        els.dropzoneText.textContent = 'Selecciona un archivo PDF desde tu dispositivo';
+      }
+    }
+
+    // Reset views
+    resetToolUI();
+
+    // Show workspace
     if (els.workspaceSection) els.workspaceSection.style.display = 'block';
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    history.pushState(null, '', `#${toolId}`);
-    refreshLucideIcons();
+    // Smooth scroll to workspace
+    els.workspaceSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (window.lucide) window.lucide.createIcons();
   }
 
   function closeTool() {
+    clearImagePreviews();
     state.currentTool = null;
-    resetToolWorkspace();
+    state.primaryFile = null;
+    state.primaryFileBuffer = null;
+    state.primaryPdfInfo = null;
+    state.filesList = [];
+    state.currentResultBlob = null;
 
-    if (els.heroSection) els.heroSection.style.display = 'block';
-    if (els.toolsSection) els.toolsSection.style.display = 'block';
     if (els.workspaceSection) els.workspaceSection.style.display = 'none';
 
-    history.pushState(null, '', window.location.pathname);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    refreshLucideIcons();
+    if (els.toolsSection) {
+      els.toolsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   function resetToolWorkspace() {
-    state.primaryFile = null;
-    state.primaryBuffer = null;
-    state.primaryPdfInfo = null;
-    state.filesList = [];
-    state.secondaryFile = null;
-    state.secondaryBuffer = null;
-    state.secondaryPdfInfo = null;
-    state.pagesData = [];
-    state.lastResultBlob = null;
-    state.isProcessing = false;
+    if (!state.currentTool) return;
+    openTool(state.currentTool);
+    showToast('Herramienta reiniciada.', 'info');
+  }
 
-    // Reset UI blocks
+  function clearImagePreviews() {
+    if (state.filesList && state.filesList.length > 0) {
+      state.filesList.forEach(item => {
+        if (item.previewUrl) {
+          try { URL.revokeObjectURL(item.previewUrl); } catch (e) { /* silent */ }
+        }
+      });
+    }
+  }
+
+  function resetToolUI() {
     if (els.uploadDropzone) els.uploadDropzone.style.display = 'block';
     if (els.fileDetailsBar) els.fileDetailsBar.style.display = 'none';
     if (els.multiFilesContainer) els.multiFilesContainer.style.display = 'none';
-    if (els.multiFilesList) els.multiFilesList.innerHTML = '';
-    if (els.toolOptionsPanel) els.toolOptionsPanel.style.display = 'none';
-    if (els.toolOptionsDynamicContent) els.toolOptionsDynamicContent.innerHTML = '';
-    if (els.pageThumbnailsWrapper) els.pageThumbnailsWrapper.style.display = 'none';
-    if (els.pageGrid) els.pageGrid.innerHTML = '';
+    if (els.toolOptionsPanel) {
+      els.toolOptionsPanel.style.display = 'none';
+      if (els.toolOptionsDynamicContent) els.toolOptionsDynamicContent.innerHTML = '';
+    }
     if (els.processingStatusArea) els.processingStatusArea.style.display = 'none';
     if (els.resultSuccessBox) els.resultSuccessBox.style.display = 'none';
     if (els.btnExecuteTool) {
-      els.btnExecuteTool.style.display = 'inline-flex';
       els.btnExecuteTool.disabled = true;
-      if (state.currentTool && TOOLS[state.currentTool]) {
-        els.btnExecuteTool.textContent = TOOLS[state.currentTool].actionBtnText;
-      }
+      const tool = TOOLS[state.currentTool];
+      els.btnExecuteTool.textContent = tool ? tool.actionBtnText : 'Ejecutar acción';
     }
-    if (els.fileInput) els.fileInput.value = '';
-    if (els.moreFileInput) els.moreFileInput.value = '';
   }
 
-  // --- FILE HANDLING & DRAG AND DROP ---
+  // --- EVENT LISTENERS ---
   function setupEventListeners() {
-    // Navigation back button
+    // Back to tools button
     if (els.backToToolsBtn) {
       els.backToToolsBtn.addEventListener('click', closeTool);
     }
 
-    // Header navigation shortcuts
-    const navHerramientas = document.getElementById('navLinkHerramientas');
-    if (navHerramientas) {
-      navHerramientas.addEventListener('click', (e) => {
-        e.preventDefault();
-        closeTool();
-        const target = document.getElementById('herramientas');
-        if (target) target.scrollIntoView({ behavior: 'smooth' });
+    // Reset tool button
+    if (els.btnResetTool) {
+      els.btnResetTool.addEventListener('click', resetToolWorkspace);
+    }
+
+    // Process another button inside success card
+    if (els.btnProcessAnother) {
+      els.btnProcessAnother.addEventListener('click', resetToolWorkspace);
+    }
+
+    // Dropzone click
+    if (els.uploadDropzone && els.fileInput) {
+      els.uploadDropzone.addEventListener('click', () => els.fileInput.click());
+      els.uploadDropzone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          els.fileInput.click();
+        }
+      });
+
+      // Drag and drop
+      ['dragenter', 'dragover'].forEach(eventName => {
+        els.uploadDropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          els.uploadDropzone.classList.add('dragover');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        els.uploadDropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          els.uploadDropzone.classList.remove('dragover');
+        });
+      });
+
+      els.uploadDropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          handleIncomingFiles(dt.files);
+        }
+      });
+
+      els.fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleIncomingFiles(e.target.files);
+          e.target.value = ''; // Reset for re-selection
+        }
       });
     }
 
-    const navVentajas = document.getElementById('navLinkVentajas');
-    if (navVentajas) {
-      navVentajas.addEventListener('click', (e) => {
-        e.preventDefault();
-        closeTool();
-        const target = document.getElementById('ventajas');
-        if (target) target.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    // Filter buttons
-    els.filterBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        els.filterBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderToolsGrid(btn.dataset.category);
-      });
-    });
-
-    // Dropzone events
-    const dropzone = els.uploadDropzone;
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropzone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzone.classList.add('dragover');
-      });
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropzone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzone.classList.remove('dragover');
-      });
-    });
-
-    dropzone.addEventListener('drop', (e) => {
-      const files = e.dataTransfer.files;
-      if (files && files.length > 0) {
-        handleFilesSelected(files);
-      }
-    });
-
-    dropzone.addEventListener('click', () => {
-      els.fileInput.value = '';
-      els.fileInput.click();
-    });
-
-    els.fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files.length > 0) {
-        handleFilesSelected(e.target.files);
-      }
-    });
-
-    // Change / Clear file buttons
-    els.btnChangeFile.addEventListener('click', () => {
-      els.fileInput.value = '';
-      els.fileInput.click();
-    });
-
-    els.btnClearFile.addEventListener('click', () => {
-      resetToolWorkspace();
-      showToast('Archivos retirados', 'info');
-    });
-
-    // Add more files button (for Merge PDF / JPG to PDF)
+    // Add more files button (for unir and jpg2pdf)
     if (els.btnAddMoreFiles && els.moreFileInput) {
-      els.btnAddMoreFiles.addEventListener('click', () => {
-        els.moreFileInput.value = '';
-        els.moreFileInput.click();
-      });
+      els.btnAddMoreFiles.addEventListener('click', () => els.moreFileInput.click());
       els.moreFileInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length > 0) {
-          appendMoreFiles(e.target.files);
+          handleIncomingFiles(e.target.files, true);
+          e.target.value = '';
         }
       });
     }
 
-    // Main action button execute
-    els.btnExecuteTool.addEventListener('click', executeCurrentTool);
+    // Change and clear single file
+    if (els.btnChangeFile && els.fileInput) {
+      els.btnChangeFile.addEventListener('click', () => els.fileInput.click());
+    }
+    if (els.btnClearFile) {
+      els.btnClearFile.addEventListener('click', resetToolWorkspace);
+    }
 
-    // Process another
-    els.btnProcessAnother.addEventListener('click', () => {
-      resetToolWorkspace();
-    });
+    // Main action execute button
+    if (els.btnExecuteTool) {
+      els.btnExecuteTool.addEventListener('click', executeCurrentTool);
+    }
 
-    // Modals
-    setupModals();
+    // Download button
+    if (els.btnDownloadMain) {
+      els.btnDownloadMain.addEventListener('click', () => {
+        if (state.currentResultBlob && state.lastResultFilename) {
+          PDFEngine.downloadBlob(state.currentResultBlob, state.lastResultFilename);
+          showToast('Descarga iniciada exitosamente.', 'success');
+        }
+      });
+    }
 
-    // Handle browser back button
-    window.addEventListener('popstate', () => {
-      const hash = window.location.hash.replace('#', '');
-      if (TOOLS[hash]) {
-        openTool(hash);
-      } else {
-        closeTool();
-      }
-    });
+    // Make global methods available for onclick links
+    window.openTool = openTool;
+    window.closeTool = closeTool;
   }
 
-  // --- FILE PROCESSOR ROUTER ---
-  async function handleFilesSelected(fileList) {
+  // --- FILE SELECTION & PROCESSING DISPATCHER ---
+  async function handleIncomingFiles(fileList, isAppend = false) {
+    if (!state.currentTool) return;
     const tool = TOOLS[state.currentTool];
-    if (!tool) return;
 
-    if (tool.multiple) {
-      // Multiple files tool (Unir PDF or JPG a PDF)
-      await handleMultiFiles(fileList);
-    } else {
-      // Single file tool
-      const file = fileList[0];
-      await handleSingleFile(file);
-    }
-  }
-
-  async function handleSingleFile(file) {
     try {
-      showLoadingProgress(true, 10, 'Leyendo archivo...');
-
-      state.primaryFile = file;
-      state.primaryBuffer = await file.arrayBuffer();
-
-      // Validate PDF if required
-      if (state.currentTool !== 'jpg2pdf') {
-        const info = await PDFEngine.getPdfInfo(state.primaryBuffer);
-        state.primaryPdfInfo = info;
-        
-        // Show Details Bar
-        els.fileMainName.textContent = file.name;
-        els.fileSubStats.textContent = `${PDFEngine.formatBytes(file.size)} • ${info.pageCount} ${info.pageCount === 1 ? 'página' : 'páginas'}`;
+      if (tool.multiple) {
+        // Multi-file tools: 'unir' or 'jpg2pdf'
+        await handleMultiFiles(fileList, isAppend);
       } else {
-        els.fileMainName.textContent = file.name;
-        els.fileSubStats.textContent = `${PDFEngine.formatBytes(file.size)}`;
+        // Single file tools: 'dividir' or 'comprimir'
+        await handleSinglePdfFile(fileList[0]);
       }
-
-      els.uploadDropzone.style.display = 'none';
-      els.fileDetailsBar.style.display = 'flex';
-
-      // Set initial state of execute button depending on tool requirements
-      if (state.currentTool === 'eliminar' || state.currentTool === 'extraer' || state.currentTool === 'anadir') {
-        els.btnExecuteTool.disabled = true;
-      } else {
-        els.btnExecuteTool.disabled = false;
-      }
-
-      // Render tool specific options and preview
-      await setupToolSpecificWorkspace();
-      showLoadingProgress(false);
-
     } catch (err) {
-      console.error(err);
-      showLoadingProgress(false);
-      showToast('Error al leer el archivo PDF. Asegúrate de que sea un PDF válido.', 'error');
-      resetToolWorkspace();
+      console.error('Error al cargar archivo:', err);
+      showToast(err.message || 'Error al leer el archivo.', 'error');
     }
   }
 
-  async function handleMultiFiles(fileList) {
-    showLoadingProgress(true, 15, 'Procesando lista de archivos...');
-    const filesArray = Array.from(fileList);
+  // --- SINGLE FILE HANDLER (Dividir, Comprimir) ---
+  async function handleSinglePdfFile(file) {
+    if (!file) return;
 
-    for (let f of filesArray) {
-      const buffer = await f.arrayBuffer();
-      let info = null;
-      if (state.currentTool === 'unir') {
-        try {
-          info = await PDFEngine.getPdfInfo(buffer);
-        } catch (e) {
-          console.warn('PDF inválido ignorado:', f.name);
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      throw new Error('Por favor selecciona un archivo con formato PDF válido.');
+    }
+
+    showStatus('Cargando y analizando documento...', 30);
+    const buffer = await file.arrayBuffer();
+
+    let info;
+    try {
+      info = await PDFEngine.getPdfInfo(buffer);
+    } catch (e) {
+      hideStatus();
+      throw new Error('No se pudo abrir el PDF. Comprueba que el archivo no esté protegido con contraseña o dañado.');
+    }
+
+    state.primaryFile = file;
+    state.primaryFileBuffer = buffer;
+    state.primaryPdfInfo = info;
+
+    hideStatus();
+
+    // Update single file details bar
+    if (els.fileMainName) els.fileMainName.textContent = file.name;
+    if (els.fileSubStats) {
+      els.fileSubStats.textContent = `${PDFEngine.formatBytes(file.size)} • ${info.pageCount} ${info.pageCount === 1 ? 'página' : 'páginas'}`;
+    }
+
+    if (els.uploadDropzone) els.uploadDropzone.style.display = 'none';
+    if (els.fileDetailsBar) els.fileDetailsBar.style.display = 'flex';
+    if (els.resultSuccessBox) els.resultSuccessBox.style.display = 'none';
+
+    // Setup tool-specific options
+    if (state.currentTool === 'dividir') {
+      setupDividirWorkspace();
+    } else if (state.currentTool === 'comprimir') {
+      setupComprimirWorkspace();
+    }
+
+    if (els.btnExecuteTool) els.btnExecuteTool.disabled = false;
+    showToast(`Archivo "${file.name}" cargado correctamente.`, 'success');
+  }
+
+  // --- MULTI FILE HANDLER (Unir, JPG a PDF) ---
+  async function handleMultiFiles(fileList, isAppend = false) {
+    if (!isAppend) {
+      clearImagePreviews();
+      state.filesList = [];
+    }
+
+    const filesArray = Array.from(fileList);
+    const isImageTool = state.currentTool === 'jpg2pdf';
+
+    let addedCount = 0;
+
+    for (const file of filesArray) {
+      if (isImageTool) {
+        // Valid image formats: jpeg, png, webp
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        const isImageExt = /\.(jpe?g|png|webp)$/i.test(file.name);
+        if (!validTypes.includes(file.type) && !isImageExt) {
+          continue; // Skip non-images quietly
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        state.filesList.push({
+          id: 'file_' + Math.random().toString(36).substring(2, 9),
+          file: file,
+          name: file.name,
+          size: file.size,
+          previewUrl: previewUrl
+        });
+        addedCount++;
+      } else {
+        // Unir PDF: valid PDF
+        if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
           continue;
         }
+
+        const buffer = await file.arrayBuffer();
+        let pageCount = 0;
+        try {
+          const info = await PDFEngine.getPdfInfo(buffer);
+          pageCount = info.pageCount;
+        } catch (e) {
+          console.warn('PDF info check skipped for:', file.name);
+        }
+
+        state.filesList.push({
+          id: 'file_' + Math.random().toString(36).substring(2, 9),
+          file: file,
+          name: file.name,
+          size: file.size,
+          buffer: buffer,
+          pageCount: pageCount
+        });
+        addedCount++;
       }
-      state.filesList.push({ file: f, buffer, info });
     }
 
     if (state.filesList.length === 0) {
-      showLoadingProgress(false);
-      showToast('No se encontraron archivos válidos.', 'error');
-      return;
+      throw new Error(isImageTool ? 'No se seleccionó ninguna imagen válida.' : 'No se seleccionaron archivos PDF válidos.');
     }
 
-    els.uploadDropzone.style.display = 'none';
-    els.multiFilesContainer.style.display = 'block';
-    els.fileDetailsBar.style.display = 'none';
-
     renderMultiFilesList();
-    setupToolSpecificWorkspace();
 
-    els.btnExecuteTool.disabled = state.currentTool === 'unir' ? (state.filesList.length < 2) : false;
-    showLoadingProgress(false);
-    showToast(`${state.filesList.length} archivo(s) cargado(s)`, 'success');
+    if (els.uploadDropzone) els.uploadDropzone.style.display = 'none';
+    if (els.multiFilesContainer) els.multiFilesContainer.style.display = 'block';
+    if (els.resultSuccessBox) els.resultSuccessBox.style.display = 'none';
+
+    // Tool specific options
+    if (state.currentTool === 'jpg2pdf') {
+      setupJpg2PdfWorkspace();
+    } else {
+      if (els.toolOptionsPanel) els.toolOptionsPanel.style.display = 'none';
+    }
+
+    // Enable/disable execute button
+    updateMultiToolExecuteButton();
+
+    showToast(`${addedCount} archivo(s) agregado(s) a la lista.`, 'success');
   }
 
-  async function appendMoreFiles(fileList) {
-    await handleMultiFiles(fileList);
+  function updateMultiToolExecuteButton() {
+    if (!els.btnExecuteTool) return;
+    if (state.currentTool === 'unir') {
+      const canExecute = state.filesList.length >= 2;
+      els.btnExecuteTool.disabled = !canExecute;
+      els.btnExecuteTool.textContent = canExecute 
+        ? `Unir ${state.filesList.length} archivos PDF`
+        : 'Selecciona al menos 2 archivos PDF';
+    } else if (state.currentTool === 'jpg2pdf') {
+      const canExecute = state.filesList.length >= 1;
+      els.btnExecuteTool.disabled = !canExecute;
+      els.btnExecuteTool.textContent = canExecute
+        ? `Convertir ${state.filesList.length} ${state.filesList.length === 1 ? 'imagen' : 'imágenes'} a PDF`
+        : 'Selecciona al menos una imagen';
+    }
   }
 
   function renderMultiFilesList() {
+    if (!els.multiFilesList) return;
     els.multiFilesList.innerHTML = '';
 
-    state.filesList.forEach((item, index) => {
-      const el = document.createElement('div');
-      el.className = 'multi-file-item';
-      const stats = item.info ? `${PDFEngine.formatBytes(item.file.size)} • ${item.info.pageCount} págs.` : PDFEngine.formatBytes(item.file.size);
+    const isImageTool = state.currentTool === 'jpg2pdf';
 
-      el.innerHTML = `
-        <div class="multi-file-left">
-          <span class="multi-file-order">${index + 1}</span>
-          <div class="file-icon-badge">
-            <i data-lucide="${state.currentTool === 'jpg2pdf' ? 'image' : 'file-text'}"></i>
+    state.filesList.forEach((item, index) => {
+      const row = document.createElement('div');
+      row.className = 'multi-file-item';
+      row.id = `item-${item.id}`;
+
+      let thumbHtml = '';
+      if (isImageTool && item.previewUrl) {
+        thumbHtml = `<img src="${item.previewUrl}" alt="${item.name}" class="multi-file-thumb" />`;
+      } else {
+        thumbHtml = `
+          <div class="file-icon-badge" style="width: 32px; height: 32px;">
+            <i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
           </div>
+        `;
+      }
+
+      const metaStats = isImageTool
+        ? PDFEngine.formatBytes(item.size)
+        : `${PDFEngine.formatBytes(item.size)}${item.pageCount ? ` • ${item.pageCount} pág.` : ''}`;
+
+      row.innerHTML = `
+        <div class="multi-file-left">
+          <div class="multi-file-order">${index + 1}</div>
+          ${thumbHtml}
           <div class="file-meta-text">
-            <div class="file-main-name">${item.file.name}</div>
-            <div class="file-sub-stats">${stats}</div>
+            <div class="file-main-name" style="max-width: 320px;">${item.name}</div>
+            <div class="file-sub-stats">${metaStats}</div>
           </div>
         </div>
         <div class="multi-file-controls">
-          <button class="mini-icon-btn btn-move-up" title="Mover arriba" ${index === 0 ? 'disabled style="opacity:0.3"' : ''}>
+          <button type="button" class="mini-icon-btn btn-move-up" title="Mover arriba" ${index === 0 ? 'disabled style="opacity: 0.35;"' : ''}>
             <i data-lucide="arrow-up"></i>
           </button>
-          <button class="mini-icon-btn btn-move-down" title="Mover abajo" ${index === state.filesList.length - 1 ? 'disabled style="opacity:0.3"' : ''}>
+          <button type="button" class="mini-icon-btn btn-move-down" title="Mover abajo" ${index === state.filesList.length - 1 ? 'disabled style="opacity: 0.35;"' : ''}>
             <i data-lucide="arrow-down"></i>
           </button>
-          <button class="mini-icon-btn btn-remove-file" title="Quitar archivo" style="color:var(--accent-danger)">
+          <button type="button" class="mini-icon-btn btn-remove-item" title="Eliminar de la lista" style="color: var(--accent-danger);">
             <i data-lucide="trash-2"></i>
           </button>
         </div>
       `;
 
-      // Handlers
-      el.querySelector('.btn-move-up').addEventListener('click', () => {
-        if (index > 0) {
-          const temp = state.filesList[index];
-          state.filesList[index] = state.filesList[index - 1];
-          state.filesList[index - 1] = temp;
-          renderMultiFilesList();
-        }
-      });
+      // Button actions
+      const btnUp = row.querySelector('.btn-move-up');
+      if (btnUp && index > 0) {
+        btnUp.addEventListener('click', () => moveMultiItem(index, index - 1));
+      }
 
-      el.querySelector('.btn-move-down').addEventListener('click', () => {
-        if (index < state.filesList.length - 1) {
-          const temp = state.filesList[index];
-          state.filesList[index] = state.filesList[index + 1];
-          state.filesList[index + 1] = temp;
-          renderMultiFilesList();
-        }
-      });
+      const btnDown = row.querySelector('.btn-move-down');
+      if (btnDown && index < state.filesList.length - 1) {
+        btnDown.addEventListener('click', () => moveMultiItem(index, index + 1));
+      }
 
-      el.querySelector('.btn-remove-file').addEventListener('click', () => {
-        state.filesList.splice(index, 1);
-        if (state.filesList.length === 0) {
-          resetToolWorkspace();
-        } else {
-          renderMultiFilesList();
-          els.btnExecuteTool.disabled = state.currentTool === 'unir' ? (state.filesList.length < 2) : (state.filesList.length === 0);
-        }
-      });
+      const btnRemove = row.querySelector('.btn-remove-item');
+      if (btnRemove) {
+        btnRemove.addEventListener('click', () => removeMultiItem(index));
+      }
 
-      els.multiFilesList.appendChild(el);
+      els.multiFilesList.appendChild(row);
     });
 
-    refreshLucideIcons();
+    if (window.lucide) window.lucide.createIcons();
   }
 
-  // --- TOOL SPECIFIC WORKSPACE LOGIC ---
-  async function setupToolSpecificWorkspace() {
-    const tool = state.currentTool;
-    els.toolOptionsPanel.style.display = 'none';
-    els.toolOptionsDynamicContent.innerHTML = '';
-    els.pageThumbnailsWrapper.style.display = 'none';
-    els.pageGrid.innerHTML = '';
+  function moveMultiItem(fromIndex, toIndex) {
+    if (toIndex < 0 || toIndex >= state.filesList.length) return;
+    const item = state.filesList.splice(fromIndex, 1)[0];
+    state.filesList.splice(toIndex, 0, item);
+    renderMultiFilesList();
+    updateMultiToolExecuteButton();
+  }
 
-    switch (tool) {
-      case 'dividir':
-        setupDividirWorkspace();
-        break;
-      case 'comprimir':
-        setupComprimirWorkspace();
-        break;
-      case 'girar':
-        await setupVisualPagesWorkspace('girar');
-        break;
-      case 'eliminar':
-        await setupVisualPagesWorkspace('eliminar');
-        break;
-      case 'extraer':
-        await setupVisualPagesWorkspace('extraer');
-        break;
-      case 'ordenar':
-        await setupVisualPagesWorkspace('ordenar');
-        break;
-      case 'jpg2pdf':
-        setupJpg2PdfWorkspace();
-        break;
-      case 'pdf2jpg':
-        setupPdf2JpgWorkspace();
-        break;
-      case 'anadir':
-        setupAnadirWorkspace();
-        break;
+  function removeMultiItem(index) {
+    const item = state.filesList[index];
+    if (item && item.previewUrl) {
+      try { URL.revokeObjectURL(item.previewUrl); } catch (e) { /* silent */ }
+    }
+    state.filesList.splice(index, 1);
+
+    if (state.filesList.length === 0) {
+      resetToolWorkspace();
+    } else {
+      renderMultiFilesList();
+      updateMultiToolExecuteButton();
     }
   }
 
-  // 2. Dividir
+  // --- TOOL 2: DIVIDIR PDF WORKSPACE SETUP ---
   function setupDividirWorkspace() {
     const totalPages = state.primaryPdfInfo.pageCount;
+    if (!els.toolOptionsPanel || !els.toolOptionsDynamicContent) return;
+
     els.toolOptionsPanel.style.display = 'block';
     els.toolOptionsDynamicContent.innerHTML = `
       <div class="options-grid">
-        <div class="option-group">
-          <label class="option-label">Modo de división:</label>
-          <select id="splitModeSelect" class="option-select">
-            <option value="range">Extraer por rango personalizado (ej. 1-3, 5)</option>
-            <option value="all-zip">Dividir todas las páginas en archivos individuales (.ZIP)</option>
-          </select>
-        </div>
-        <div class="option-group" id="splitRangeGroup">
-          <label class="option-label">Páginas o rangos a extraer (Total: ${totalPages} páginas):</label>
-          <input type="text" id="splitRangeInput" class="option-input" placeholder="Ejemplo: 1-3, 5, 8" value="1-${Math.min(3, totalPages)}">
-          <span style="font-size:0.75rem; color:var(--text-muted)">Usa comas para separar páginas o guiones para rangos.</span>
-        </div>
-      </div>
-    `;
-
-    const modeSelect = document.getElementById('splitModeSelect');
-    const rangeGroup = document.getElementById('splitRangeGroup');
-    modeSelect.addEventListener('change', () => {
-      rangeGroup.style.display = modeSelect.value === 'range' ? 'flex' : 'none';
-    });
-  }
-
-  // 3. Comprimir
-  function setupComprimirWorkspace() {
-    els.toolOptionsPanel.style.display = 'block';
-    els.toolOptionsDynamicContent.innerHTML = `
-      <div class="options-grid">
-        <div class="option-group">
-          <label class="option-label">Nivel de compresión:</label>
-          <select id="compressionLevelSelect" class="option-select">
-            <option value="recommended" selected>Compresión recomendada: buena reducción manteniendo alta calidad</option>
-            <option value="high">Compresión alta: mayor reducción con pérdida de calidad moderada</option>
-            <option value="maximum">Compresión máxima: mayor reducción (puede disminuir nitidez)</option>
-          </select>
-          <span style="font-size:0.8125rem; color:var(--text-muted); margin-top:0.4rem; display:block; line-height:1.4;">
-            La opción recomendada equilibra la reducción de tamaño con texto completamente nítido e imágenes con gran detalle.
-          </span>
-        </div>
-        <div class="option-group">
-          <label class="option-label">Tamaño actual del archivo:</label>
-          <div style="font-size:1.125rem; font-weight:700; color:var(--brand-primary); margin-top:0.4rem;">
-            ${PDFEngine.formatBytes(state.primaryFile.size)}
-          </div>
-          <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem; display:block;">
-            100% procesado localmente en tu navegador sin enviar datos a servidores.
-          </span>
-        </div>
-      </div>
-    `;
-  }
-
-  // 5. JPG a PDF
-  function setupJpg2PdfWorkspace() {
-    els.toolOptionsPanel.style.display = 'block';
-    els.toolOptionsDynamicContent.innerHTML = `
-      <div class="options-grid">
-        <div class="option-group">
-          <label class="option-label">Formato de página:</label>
-          <select id="jpgPageFitSelect" class="option-select">
-            <option value="a4-portrait">A4 Vertical</option>
-            <option value="a4-landscape">A4 Horizontal</option>
-            <option value="fit-image">Ajustar al tamaño de la imagen</option>
-          </select>
-        </div>
-        <div class="option-group">
-          <label class="option-label">Márgenes:</label>
-          <select id="jpgMarginsSelect" class="option-select">
-            <option value="small">Margen pequeño (20px)</option>
-            <option value="none">Sin margen</option>
-            <option value="normal">Margen normal (40px)</option>
-          </select>
-        </div>
-      </div>
-    `;
-  }
-
-  // 6. PDF a JPG
-  function setupPdf2JpgWorkspace() {
-    els.toolOptionsPanel.style.display = 'block';
-    els.toolOptionsDynamicContent.innerHTML = `
-      <div class="options-grid">
-        <div class="option-group">
-          <label class="option-label">Calidad de las imágenes:</label>
-          <select id="pdf2JpgQualitySelect" class="option-select">
-            <option value="high">Alta Calidad (2x resolución, ideal para lectura y presentaciones)</option>
-            <option value="standard">Estándar (1x resolución, peso más ligero)</option>
-          </select>
-        </div>
-        <div class="option-group">
-          <label class="option-label">Formato de salida:</label>
-          <div style="font-size:0.875rem; color:var(--text-secondary); margin-top:0.5rem;">
-            Se generará un archivo .ZIP con todas las páginas en formato JPG de alta nitidez.
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // 10. Añadir páginas a PDF
-  function setupAnadirWorkspace() {
-    els.toolOptionsPanel.style.display = 'block';
-    const totalPages = state.primaryPdfInfo.pageCount;
-    els.toolOptionsDynamicContent.innerHTML = `
-      <div class="options-grid">
-        <div class="option-group">
-          <label class="option-label">Posición donde insertar:</label>
-          <select id="insertPositionSelect" class="option-select">
-            <option value="end">Al final del documento</option>
-            <option value="start">Al principio del documento</option>
-            <option value="after">Después de una página específica</option>
-          </select>
-        </div>
-        <div class="option-group" id="insertAfterPageGroup" style="display:none;">
-          <label class="option-label">Insertar después de la página (1 a ${totalPages}):</label>
-          <input type="number" id="insertAfterPageInput" class="option-input" min="1" max="${totalPages}" value="1">
-        </div>
         <div class="option-group" style="grid-column: 1 / -1;">
-          <label class="option-label">Documento o imagen adicional a insertar:</label>
-          <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.35rem;">
-            <input type="file" id="secondaryFileInput" accept=".pdf,image/jpeg,image/png" style="display:none">
-            <button type="button" class="btn-secondary-sm" id="btnSelectSecondaryFile">
-              <i data-lucide="paperclip"></i> Seleccionar PDF o Imagen adicional
-            </button>
-            <span id="secondaryFileName" style="font-size:0.875rem; font-weight:600; color:var(--brand-primary);">Ningún archivo seleccionado</span>
+          <div class="split-info-header">
+            <span class="badge-page-count">
+              <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
+              Total de páginas en el documento: <strong>${totalPages}</strong>
+            </span>
+            <span class="badge-hint">Indica las páginas exactas que deseas incluir en tu nuevo PDF</span>
           </div>
+        </div>
+
+        <div class="option-group" id="splitRangeGroup" style="grid-column: 1 / -1;">
+          <label class="option-label" for="splitRangeInput">Páginas individuales o rangos:</label>
+          <input type="text" id="splitRangeInput" class="option-input" 
+                 placeholder="Ejemplos: 1, 1-3, 1,3,5 o 2-4,7" 
+                 value="1-${Math.min(3, totalPages)}">
+          
+          <div class="range-examples-bar">
+            <span style="font-size: 0.8125rem; color: var(--text-muted); font-weight: 600;">Ejemplos rápidos:</span>
+            <button type="button" class="btn-range-chip" data-range="1">1 (Página 1)</button>
+            <button type="button" class="btn-range-chip" data-range="1-${Math.min(3, totalPages)}">1-${Math.min(3, totalPages)}</button>
+            ${totalPages >= 5 ? `<button type="button" class="btn-range-chip" data-range="1,3,5">1,3,5</button>` : ''}
+            ${totalPages >= 7 ? `<button type="button" class="btn-range-chip" data-range="2-4,7">2-4,7</button>` : ''}
+            <button type="button" class="btn-range-chip" data-range="1-${totalPages}">Todas (1-${totalPages})</button>
+          </div>
+
+          <div class="split-feedback-box" id="splitFeedbackBox"></div>
+        </div>
+
+        <div class="option-group" style="grid-column: 1 / -1; margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color);">
+          <label class="option-label" for="splitModeSelect">Modo de extracción:</label>
+          <select id="splitModeSelect" class="option-select">
+            <option value="range" selected>Crear un nuevo PDF con las páginas seleccionadas</option>
+            <option value="all-zip">Separar todas las páginas (${totalPages}) en archivos PDF individuales (.ZIP)</option>
+          </select>
         </div>
       </div>
     `;
 
-    const posSelect = document.getElementById('insertPositionSelect');
-    const afterGroup = document.getElementById('insertAfterPageGroup');
-    posSelect.addEventListener('change', () => {
-      afterGroup.style.display = posSelect.value === 'after' ? 'flex' : 'none';
-    });
+    if (window.lucide) window.lucide.createIcons();
 
-    const secInput = document.getElementById('secondaryFileInput');
-    const btnSelect = document.getElementById('btnSelectSecondaryFile');
-    const nameLabel = document.getElementById('secondaryFileName');
+    const rangeInput = document.getElementById('splitRangeInput');
+    const rangeGroup = document.getElementById('splitRangeGroup');
+    const modeSelect = document.getElementById('splitModeSelect');
+    const feedbackBox = document.getElementById('splitFeedbackBox');
 
-    els.btnExecuteTool.disabled = !state.secondaryFile;
+    function updateFeedback() {
+      if (!rangeInput || !feedbackBox) return;
+      const val = rangeInput.value.trim();
+      const parsedIndices = PDFEngine.parsePageRanges(val, totalPages);
 
-    btnSelect.addEventListener('click', () => {
-      secInput.value = '';
-      secInput.click();
-    });
-    secInput.addEventListener('change', async (e) => {
-      if (e.target.files && e.target.files.length > 0) {
-        state.secondaryFile = e.target.files[0];
-        state.secondaryBuffer = await state.secondaryFile.arrayBuffer();
-        nameLabel.textContent = `✓ ${state.secondaryFile.name} (${PDFEngine.formatBytes(state.secondaryFile.size)})`;
-        els.btnExecuteTool.disabled = false;
-        showToast('Documento secundario listo para insertar', 'success');
-      }
-    });
-
-    refreshLucideIcons();
-  }
-
-  // --- VISUAL PAGES WORKSPACE (Girar, Eliminar, Extraer, Ordenar) ---
-  async function setupVisualPagesWorkspace(mode) {
-    els.pageThumbnailsWrapper.style.display = 'block';
-    els.pageGrid.innerHTML = '';
-    state.pagesData = [];
-
-    const totalPages = state.primaryPdfInfo.pageCount;
-    showLoadingProgress(true, 25, `Generando vista previa de ${totalPages} páginas...`);
-
-    // Render toolbar buttons depending on mode
-    let actionsHtml = '';
-    if (mode === 'girar') {
-      actionsHtml = `
-        <button class="btn-secondary-sm" id="btnRotateAll90">
-          <i data-lucide="rotate-cw"></i> Rotar todas +90°
-        </button>
-        <button class="btn-secondary-sm" id="btnRotateAll180">
-          <i data-lucide="refresh-cw"></i> Rotar todas 180°
-        </button>
-        <button class="btn-secondary-sm" id="btnResetRotations">
-          <i data-lucide="undo"></i> Restablecer
-        </button>
-      `;
-    } else if (mode === 'eliminar') {
-      actionsHtml = `
-        <button class="btn-secondary-sm" id="btnSelectEvenPages">Seleccionar Pares</button>
-        <button class="btn-secondary-sm" id="btnSelectOddPages">Seleccionar Impares</button>
-        <button class="btn-secondary-sm" id="btnClearSelections">Limpiar selección</button>
-      `;
-    } else if (mode === 'extraer') {
-      actionsHtml = `
-        <button class="btn-secondary-sm" id="btnSelectAll">Seleccionar todas</button>
-        <button class="btn-secondary-sm" id="btnInvertSelection">Invertir selección</button>
-        <button class="btn-secondary-sm" id="btnClearSelections">Limpiar selección</button>
-      `;
-    } else if (mode === 'ordenar') {
-      actionsHtml = `
-        <button class="btn-secondary-sm" id="btnReverseOrder">Invertir orden</button>
-        <button class="btn-secondary-sm" id="btnResetOrder">Restablecer orden original</button>
-      `;
-    }
-
-    els.thumbnailsActions.innerHTML = actionsHtml;
-    refreshLucideIcons();
-
-    // Prepare Pages state
-    for (let i = 0; i < totalPages; i++) {
-      state.pagesData.push({
-        pageNum: i + 1,
-        originalIndex: i,
-        rotation: 0,
-        selected: false,
-        canvas: null
-      });
-    }
-
-    // Render placeholder cards immediately for instant interaction
-    renderThumbnailsGrid(mode);
-    updateThumbnailsToolbar(mode);
-    setupThumbnailToolbarListeners(mode);
-
-    // Asynchronously render thumbnails and update canvas preview boxes
-    PDFEngine.renderPageThumbnails(state.primaryBuffer, (pageNum, canvas) => {
-      if (state.currentTool !== mode) return;
-      const pageIndex = pageNum - 1;
-      if (state.pagesData[pageIndex]) {
-        state.pagesData[pageIndex].canvas = canvas;
-        const box = document.getElementById(`canvas-box-${state.pagesData[pageIndex].originalIndex}`);
-        if (box) {
-          box.innerHTML = '';
-          box.appendChild(cloneCanvas(canvas));
+      if (parsedIndices.length > 0) {
+        const readableList = parsedIndices.map(idx => idx + 1).join(', ');
+        feedbackBox.innerHTML = `
+          <div class="feedback-success">
+            <i data-lucide="check-circle" style="width: 16px; height: 16px; color: var(--accent-success);"></i>
+            <span>Se generará un PDF con <strong>${parsedIndices.length}</strong> ${parsedIndices.length === 1 ? 'página' : 'páginas'}: <code>${readableList}</code></span>
+          </div>
+        `;
+        if (els.btnExecuteTool) {
+          els.btnExecuteTool.disabled = false;
+          els.btnExecuteTool.textContent = `Crear PDF con ${parsedIndices.length} páginas`;
+        }
+      } else {
+        feedbackBox.innerHTML = `
+          <div class="feedback-error">
+            <i data-lucide="alert-circle" style="width: 16px; height: 16px; color: var(--accent-danger);"></i>
+            <span>Por favor escribe números de página válidos entre 1 y ${totalPages} (ejemplo: 1-3 o 1,3,5).</span>
+          </div>
+        `;
+        if (els.btnExecuteTool) {
+          els.btnExecuteTool.disabled = true;
+          els.btnExecuteTool.textContent = 'Indica páginas válidas para continuar';
         }
       }
-    }).then(() => {
-      if (state.currentTool === mode) {
-        showLoadingProgress(false);
-      }
-    }).catch(err => {
-      console.warn('Error al renderizar vistas previas:', err);
-      if (state.currentTool === mode) {
-        showLoadingProgress(false);
-      }
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    if (rangeInput) {
+      rangeInput.addEventListener('input', updateFeedback);
+    }
+
+    // Quick range chips
+    const chips = els.toolOptionsDynamicContent.querySelectorAll('.btn-range-chip');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const range = chip.getAttribute('data-range');
+        if (range && rangeInput) {
+          rangeInput.value = range;
+          updateFeedback();
+        }
+      });
+    });
+
+    // Mode select
+    if (modeSelect) {
+      modeSelect.addEventListener('change', () => {
+        if (modeSelect.value === 'all-zip') {
+          if (rangeGroup) rangeGroup.style.display = 'none';
+          if (els.btnExecuteTool) {
+            els.btnExecuteTool.disabled = false;
+            els.btnExecuteTool.textContent = `Separar las ${totalPages} páginas en ZIP`;
+          }
+        } else {
+          if (rangeGroup) rangeGroup.style.display = 'flex';
+          updateFeedback();
+        }
+      });
+    }
+
+    // Initial feedback run
+    updateFeedback();
+  }
+
+  // --- TOOL 3: JPG A PDF WORKSPACE SETUP ---
+  function setupJpg2PdfWorkspace() {
+    if (!els.toolOptionsPanel || !els.toolOptionsDynamicContent) return;
+
+    els.toolOptionsPanel.style.display = 'block';
+    els.toolOptionsDynamicContent.innerHTML = `
+      <div class="options-grid">
+        <div class="option-group">
+          <label class="option-label" for="jpgFitSelect">Formato y Orientación:</label>
+          <select id="jpgFitSelect" class="option-select">
+            <option value="a4-portrait" selected>A4 - Vertical (Estándar de documento)</option>
+            <option value="a4-landscape">A4 - Horizontal (Apaisado)</option>
+            <option value="original">Ajuste al tamaño original de cada imagen</option>
+          </select>
+        </div>
+
+        <div class="option-group">
+          <label class="option-label" for="jpgMarginSelect">Márgenes de página:</label>
+          <select id="jpgMarginSelect" class="option-select">
+            <option value="small" selected>Margen pequeño (15 pt)</option>
+            <option value="normal">Margen normal (36 pt)</option>
+            <option value="none">Sin margen (Al borde de la hoja)</option>
+          </select>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- TOOL 4: COMPRIMIR PDF WORKSPACE SETUP ---
+  function setupComprimirWorkspace() {
+    if (!els.toolOptionsPanel || !els.toolOptionsDynamicContent) return;
+    const origSizeText = PDFEngine.formatBytes(state.primaryFile.size);
+
+    els.toolOptionsPanel.style.display = 'block';
+    els.toolOptionsDynamicContent.innerHTML = `
+      <div class="options-grid">
+        <div class="option-group" style="grid-column: 1 / -1;">
+          <div class="split-info-header">
+            <span class="badge-page-count">
+              <i data-lucide="file" style="width: 16px; height: 16px;"></i>
+              Tamaño actual del archivo: <strong>${origSizeText}</strong>
+            </span>
+            <span class="badge-hint">Compresión visual equilibrada y no agresiva</span>
+          </div>
+        </div>
+
+        <div class="option-group" style="grid-column: 1 / -1;">
+          <label class="option-label">Selecciona el nivel de compresión:</label>
+          
+          <div class="compression-levels-grid">
+            <label class="compression-level-card active">
+              <input type="radio" name="compressionLevel" value="recommended" checked />
+              <div class="level-card-body">
+                <div class="level-card-title">
+                  <strong>Compresión recomendada (Equilibrada)</strong>
+                  <span class="badge-recommended">Recomendado</span>
+                </div>
+                <p class="level-card-desc">
+                  Reduce moderadamente el tamaño del archivo conservando la máxima nitidez en textos y fotografías. Ideal para trámites, currículums y envíos por correo electrónico.
+                </p>
+              </div>
+            </label>
+
+            <label class="compression-level-card">
+              <input type="radio" name="compressionLevel" value="light" />
+              <div class="level-card-body">
+                <div class="level-card-title">
+                  <strong>Compresión ligera (Máxima fidelidad)</strong>
+                </div>
+                <p class="level-card-desc">
+                  Optimización sutil que preserva intacto cada mínimo detalle visual. Diseñado para documentos con planos, tablas complejas o gráficos de alta precisión.
+                </p>
+              </div>
+            </label>
+
+            <label class="compression-level-card">
+              <input type="radio" name="compressionLevel" value="high" />
+              <div class="level-card-body">
+                <div class="level-card-title">
+                  <strong>Compresión alta</strong>
+                </div>
+                <p class="level-card-desc">
+                  Mayor reducción de tamaño para archivos excepcionalmente pesados donde se requiere cumplir con un límite estricto de megabytes.
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="option-group" style="grid-column: 1 / -1; margin-top: 0.25rem;">
+          <div class="quality-assurance-note">
+            <i data-lucide="info" style="width: 18px; height: 18px; flex-shrink: 0; color: var(--brand-primary);"></i>
+            <span>
+              <strong>Garantía de calidad:</strong> Si tu PDF ya está optimizado internamente, el motor protegerá su estructura para que el documento resultante no aumente de tamaño ni degrade su contenido.
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    // Visual radio selection
+    const levelCards = els.toolOptionsDynamicContent.querySelectorAll('.compression-level-card');
+    levelCards.forEach(card => {
+      const radio = card.querySelector('input[type="radio"]');
+      card.addEventListener('click', () => {
+        levelCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        if (radio) radio.checked = true;
+      });
     });
   }
 
-  function cloneCanvas(oldCanvas) {
-    if (!oldCanvas) return null;
-    const newCanvas = document.createElement('canvas');
-    newCanvas.width = oldCanvas.width;
-    newCanvas.height = oldCanvas.height;
-    const ctx = newCanvas.getContext('2d');
-    ctx.drawImage(oldCanvas, 0, 0);
-    return newCanvas;
-  }
-
-  function renderThumbnailsGrid(mode) {
-    els.pageGrid.innerHTML = '';
-
-    state.pagesData.forEach((pageItem, currentIndex) => {
-      const card = document.createElement('div');
-      card.className = 'page-thumbnail-card';
-      card.id = `thumb-card-${pageItem.originalIndex}`;
-
-      if (mode === 'eliminar' && pageItem.selected) {
-        card.classList.add('selected-for-action');
-      } else if (mode === 'extraer' && pageItem.selected) {
-        card.classList.add('selected-for-extract');
-      }
-
-      // Canvas preview box with rotation transform
-      const canvasBox = document.createElement('div');
-      canvasBox.className = 'thumbnail-canvas-box';
-      canvasBox.id = `canvas-box-${pageItem.originalIndex}`;
-      if (pageItem.rotation !== 0) {
-        canvasBox.style.transform = `rotate(${pageItem.rotation}deg)`;
-      }
-
-      if (pageItem.canvas) {
-        canvasBox.appendChild(cloneCanvas(pageItem.canvas));
-      } else {
-        canvasBox.innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted)">Pág. ' + pageItem.pageNum + '</span>';
-      }
-
-      // Page tag and controls
-      const tag = document.createElement('div');
-      tag.className = 'page-number-tag';
-      tag.textContent = `Página ${pageItem.pageNum}`;
-
-      // Mode specific controls on card
-      const controls = document.createElement('div');
-      controls.className = 'page-card-controls';
-
-      if (mode === 'girar') {
-        controls.innerHTML = `
-          <button class="mini-icon-btn btn-rotate-single" title="Rotar esta página 90°">
-            <i data-lucide="rotate-cw"></i>
-          </button>
-        `;
-        controls.querySelector('.btn-rotate-single').addEventListener('click', (e) => {
-          e.stopPropagation();
-          pageItem.rotation = (pageItem.rotation + 90) % 360;
-          canvasBox.style.transform = `rotate(${pageItem.rotation}deg)`;
-          updateThumbnailsToolbar(mode);
-        });
-      } else if (mode === 'eliminar') {
-        controls.innerHTML = `
-          <button class="mini-icon-btn ${pageItem.selected ? 'btn-danger-sm' : ''}" title="Marcar para eliminar">
-            <i data-lucide="${pageItem.selected ? 'x' : 'trash-2'}"></i>
-          </button>
-        `;
-      } else if (mode === 'extraer') {
-        controls.innerHTML = `
-          <button class="mini-icon-btn" title="Seleccionar para extraer">
-            <i data-lucide="${pageItem.selected ? 'check' : 'plus'}"></i>
-          </button>
-        `;
-      } else if (mode === 'ordenar') {
-        controls.innerHTML = `
-          <button class="mini-icon-btn btn-move-left" title="Mover a la izquierda" ${currentIndex === 0 ? 'disabled style="opacity:0.3"' : ''}>
-            <i data-lucide="chevron-left"></i>
-          </button>
-          <button class="mini-icon-btn btn-move-right" title="Mover a la derecha" ${currentIndex === state.pagesData.length - 1 ? 'disabled style="opacity:0.3"' : ''}>
-            <i data-lucide="chevron-right"></i>
-          </button>
-        `;
-
-        controls.querySelector('.btn-move-left').addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (currentIndex > 0) {
-            const tmp = state.pagesData[currentIndex];
-            state.pagesData[currentIndex] = state.pagesData[currentIndex - 1];
-            state.pagesData[currentIndex - 1] = tmp;
-            renderThumbnailsGrid(mode);
-          }
-        });
-
-        controls.querySelector('.btn-move-right').addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (currentIndex < state.pagesData.length - 1) {
-            const tmp = state.pagesData[currentIndex];
-            state.pagesData[currentIndex] = state.pagesData[currentIndex + 1];
-            state.pagesData[currentIndex + 1] = tmp;
-            renderThumbnailsGrid(mode);
-          }
-        });
-      }
-
-      // Click card to toggle selection (for Eliminar / Extraer)
-      if (mode === 'eliminar' || mode === 'extraer') {
-        card.style.cursor = 'pointer';
-        card.addEventListener('click', () => {
-          pageItem.selected = !pageItem.selected;
-          renderThumbnailsGrid(mode);
-          updateThumbnailsToolbar(mode);
-        });
-      }
-
-      card.appendChild(canvasBox);
-      card.appendChild(tag);
-      card.appendChild(controls);
-      els.pageGrid.appendChild(card);
-    });
-
-    refreshLucideIcons();
-  }
-
-  function updateThumbnailsToolbar(mode) {
-    if (mode === 'girar') {
-      const rotatedCount = state.pagesData.filter(p => p.rotation !== 0).length;
-      els.thumbnailsStats.textContent = rotatedCount === 0
-        ? `Todas las páginas en orientación original (${state.pagesData.length} págs.)`
-        : `${rotatedCount} de ${state.pagesData.length} páginas rotadas`;
-    } else if (mode === 'eliminar') {
-      const deleteCount = state.pagesData.filter(p => p.selected).length;
-      const remainCount = state.pagesData.length - deleteCount;
-      els.thumbnailsStats.textContent = `Páginas a eliminar: ${deleteCount} • Quedarán: ${remainCount} págs.`;
-      els.btnExecuteTool.disabled = deleteCount === 0 || remainCount === 0;
-    } else if (mode === 'extraer') {
-      const extractCount = state.pagesData.filter(p => p.selected).length;
-      els.thumbnailsStats.textContent = `Páginas seleccionadas para extraer: ${extractCount} de ${state.pagesData.length}`;
-      els.btnExecuteTool.disabled = extractCount === 0;
-    } else if (mode === 'ordenar') {
-      els.thumbnailsStats.textContent = `Páginas: ${state.pagesData.length} • Reordena con las flechas de cada tarjeta`;
-    }
-  }
-
-  function setupThumbnailToolbarListeners(mode) {
-    if (mode === 'girar') {
-      const btn90 = document.getElementById('btnRotateAll90');
-      const btn180 = document.getElementById('btnRotateAll180');
-      const btnReset = document.getElementById('btnResetRotations');
-
-      if (btn90) btn90.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.rotation = (p.rotation + 90) % 360);
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-
-      if (btn180) btn180.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.rotation = (p.rotation + 180) % 360);
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-
-      if (btnReset) btnReset.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.rotation = 0);
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-    } else if (mode === 'eliminar') {
-      const btnEven = document.getElementById('btnSelectEvenPages');
-      const btnOdd = document.getElementById('btnSelectOddPages');
-      const btnClear = document.getElementById('btnClearSelections');
-
-      if (btnEven) btnEven.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.selected = (p.pageNum % 2 === 0));
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-
-      if (btnOdd) btnOdd.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.selected = (p.pageNum % 2 !== 0));
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-
-      if (btnClear) btnClear.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.selected = false);
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-    } else if (mode === 'extraer') {
-      const btnAll = document.getElementById('btnSelectAll');
-      const btnInvert = document.getElementById('btnInvertSelection');
-      const btnClear = document.getElementById('btnClearSelections');
-
-      if (btnAll) btnAll.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.selected = true);
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-
-      if (btnInvert) btnInvert.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.selected = !p.selected);
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-
-      if (btnClear) btnClear.addEventListener('click', () => {
-        state.pagesData.forEach(p => p.selected = false);
-        renderThumbnailsGrid(mode);
-        updateThumbnailsToolbar(mode);
-      });
-    } else if (mode === 'ordenar') {
-      const btnReverse = document.getElementById('btnReverseOrder');
-      const btnReset = document.getElementById('btnResetOrder');
-
-      if (btnReverse) btnReverse.addEventListener('click', () => {
-        state.pagesData.reverse();
-        renderThumbnailsGrid(mode);
-      });
-
-      if (btnReset) btnReset.addEventListener('click', () => {
-        state.pagesData.sort((a, b) => a.pageNum - b.pageNum);
-        renderThumbnailsGrid(mode);
-      });
-    }
-  }
-
-  // --- EXECUTE CURRENT TOOL ---
+  // --- TOOL EXECUTION DISPATCHER ---
   async function executeCurrentTool() {
-    if (state.isProcessing) return;
-    state.isProcessing = true;
-    els.btnExecuteTool.disabled = true;
+    if (!state.currentTool) return;
+
+    if (els.btnExecuteTool) els.btnExecuteTool.disabled = true;
+    if (els.resultSuccessBox) els.resultSuccessBox.style.display = 'none';
 
     try {
-      showLoadingProgress(true, 5, 'Iniciando proceso...');
-
-      const progressCallback = (pct, msg) => {
-        showLoadingProgress(true, pct, msg);
-      };
-
-      const tool = state.currentTool;
-      let outputBlob = null;
-      let outputFilename = '';
-
-      switch (tool) {
-        case 'unir': {
-          const buffers = state.filesList.map(item => item.buffer);
-          const bytes = await PDFEngine.mergePDFs(buffers, progressCallback);
-          outputBlob = new Blob([bytes], { type: 'application/pdf' });
-          outputFilename = 'Documentos-Unidos.pdf';
-          showSuccessResult('¡PDFs unidos correctamente!', `Se han combinado con éxito ${buffers.length} documentos en uno solo.`);
+      switch (state.currentTool) {
+        case 'unir':
+          await runUnirTool();
           break;
-        }
-
-        case 'dividir': {
-          const mode = document.getElementById('splitModeSelect').value;
-          const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
-          if (mode === 'all-zip') {
-            outputBlob = await PDFEngine.splitAllPagesToZip(state.primaryBuffer, baseName, progressCallback);
-            outputFilename = `${baseName}-paginas-divididas.zip`;
-            showSuccessResult('¡Páginas separadas con éxito!', 'Se ha creado un archivo ZIP con cada página del PDF por separado.');
-          } else {
-            const rangeStr = document.getElementById('splitRangeInput').value;
-            const res = await PDFEngine.splitPDF(state.primaryBuffer, rangeStr, progressCallback);
-            outputBlob = new Blob([res.bytes], { type: 'application/pdf' });
-            outputFilename = `${baseName}-extraido.pdf`;
-            showSuccessResult('¡PDF dividido correctamente!', `Se extrajeron con éxito ${res.pagesExtracted} páginas seleccionadas.`);
-          }
+        case 'dividir':
+          await runDividirTool();
           break;
-        }
-
-        case 'comprimir': {
-          const level = document.getElementById('compressionLevelSelect').value;
-          const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
-          const res = await PDFEngine.compressPDF(state.primaryBuffer, level, progressCallback);
-          outputBlob = new Blob([res.bytes], { type: 'application/pdf' });
-          outputFilename = `${baseName}-comprimido.pdf`;
-          
-          const savings = Math.max(0, Math.round(((res.originalSize - res.compressedSize) / res.originalSize) * 100));
-          let detailMessage = `De ${PDFEngine.formatBytes(res.originalSize)} a ${PDFEngine.formatBytes(res.compressedSize)} (${savings}% de reducción manteniendo alta calidad visual).`;
-          if (savings === 0) {
-            detailMessage = `Tu archivo original ya se encontraba en su tamaño óptimo (${PDFEngine.formatBytes(res.originalSize)}). Se mantuvo intacta su calidad original.`;
-          }
-          showSuccessResult(
-            '¡Documento optimizado con éxito!',
-            detailMessage
-          );
+        case 'jpg2pdf':
+          await runJpg2PdfTool();
           break;
-        }
-
-        case 'girar': {
-          const rotationsMap = {};
-          let anyRotated = false;
-          state.pagesData.forEach((p, idx) => {
-            if (p.rotation !== 0) {
-              rotationsMap[idx] = p.rotation;
-              anyRotated = true;
-            }
-          });
-          if (!anyRotated) {
-            throw new Error('No has rotado ninguna página. Rota al menos una página usando los botones antes de guardar.');
-          }
-          const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
-          const bytes = await PDFEngine.rotatePDF(state.primaryBuffer, rotationsMap, progressCallback);
-          outputBlob = new Blob([bytes], { type: 'application/pdf' });
-          outputFilename = `${baseName}-rotado.pdf`;
-          showSuccessResult('¡Páginas rotadas exitosamente!', 'La nueva orientación ha sido guardada en tu nuevo documento PDF.');
+        case 'comprimir':
+          await runComprimirTool();
           break;
-        }
-
-        case 'jpg2pdf': {
-          const fit = document.getElementById('jpgPageFitSelect').value;
-          const margin = document.getElementById('jpgMarginsSelect').value;
-          const imageFiles = state.filesList.map(item => item.file);
-          const bytes = await PDFEngine.imagesToPDF(imageFiles, { fit, margin }, progressCallback);
-          outputBlob = new Blob([bytes], { type: 'application/pdf' });
-          outputFilename = 'Imagenes-Convertidas.pdf';
-          showSuccessResult('¡Imágenes convertidas a PDF!', `Se creó un PDF compuesto por ${imageFiles.length} imágenes.`);
-          break;
-        }
-
-        case 'pdf2jpg': {
-          const quality = document.getElementById('pdf2JpgQualitySelect').value;
-          const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
-          const res = await PDFEngine.pdfToJPG(state.primaryBuffer, baseName, quality, progressCallback);
-          outputBlob = res.zipBlob;
-          outputFilename = `${baseName}-imagenes-jpg.zip`;
-          showSuccessResult('¡Conversión a JPG completada!', `Se generaron ${res.images.length} imágenes JPG contenidas en un archivo ZIP.`);
-          break;
-        }
-
-        case 'eliminar': {
-          const deleteIndices = state.pagesData.filter(p => p.selected).map(p => p.originalIndex);
-          const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
-          const res = await PDFEngine.deletePages(state.primaryBuffer, deleteIndices, progressCallback);
-          outputBlob = new Blob([res.bytes], { type: 'application/pdf' });
-          outputFilename = `${baseName}-limpio.pdf`;
-          showSuccessResult('¡Páginas eliminadas con éxito!', `Se eliminaron ${deleteIndices.length} páginas. El nuevo PDF tiene ${res.remainingCount} páginas.`);
-          break;
-        }
-
-        case 'extraer': {
-          const extractIndices = state.pagesData.filter(p => p.selected).map(p => p.originalIndex);
-          const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
-          const res = await PDFEngine.extractPages(state.primaryBuffer, extractIndices, progressCallback);
-          outputBlob = new Blob([res.bytes], { type: 'application/pdf' });
-          outputFilename = `${baseName}-extraidas.pdf`;
-          showSuccessResult('¡Páginas extraídas con éxito!', `Se creó un nuevo PDF con las ${res.extractedCount} páginas seleccionadas.`);
-          break;
-        }
-
-        case 'ordenar': {
-          const newOrderIndices = state.pagesData.map(p => p.originalIndex);
-          const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
-          const bytes = await PDFEngine.reorderPages(state.primaryBuffer, newOrderIndices, progressCallback);
-          outputBlob = new Blob([bytes], { type: 'application/pdf' });
-          outputFilename = `${baseName}-reordenado.pdf`;
-          showSuccessResult('¡Páginas reordenadas con éxito!', 'El nuevo orden de páginas se ha guardado en el archivo PDF.');
-          break;
-        }
-
-        case 'anadir': {
-          if (!state.secondaryFile) {
-            throw new Error('Debes seleccionar el archivo secundario que deseas insertar.');
-          }
-          const mode = document.getElementById('insertPositionSelect').value;
-          const afterPage = parseInt(document.getElementById('insertAfterPageInput')?.value || '1', 10);
-          const isPdf = state.secondaryFile.type.includes('pdf') || state.secondaryFile.name.endsWith('.pdf');
-          const baseName = state.primaryFile.name.replace(/\.[^/.]+$/, "");
-
-          const bytes = await PDFEngine.addPagesToPDF(
-            state.primaryBuffer,
-            state.secondaryBuffer,
-            isPdf,
-            mode,
-            afterPage,
-            progressCallback
-          );
-
-          outputBlob = new Blob([bytes], { type: 'application/pdf' });
-          outputFilename = `${baseName}-paginas-anadidas.pdf`;
-          showSuccessResult('¡Páginas añadidas con éxito!', 'El contenido adicional ha sido integrado al documento original.');
-          break;
-        }
+        default:
+          throw new Error('Herramienta no reconocida.');
       }
-
-      state.lastResultBlob = outputBlob;
-      state.lastResultFilename = outputFilename;
-
-      // Configure Download button
-      els.btnDownloadMain.onclick = () => {
-        PDFEngine.downloadBlob(state.lastResultBlob, state.lastResultFilename);
-      };
-
     } catch (err) {
-      console.error(err);
-      showLoadingProgress(false);
-      showToast(err.message || 'Ocurrió un error al procesar el archivo.', 'error');
-      els.btnExecuteTool.disabled = false;
-    } finally {
-      state.isProcessing = false;
+      console.error('Error durante el procesamiento:', err);
+      hideStatus();
+      if (els.btnExecuteTool) els.btnExecuteTool.disabled = false;
+      showToast(err.message || 'Ocurrió un error inesperado al procesar tu documento.', 'error');
     }
   }
 
-  // --- PROGRESS AND SUCCESS UI ---
-  function showLoadingProgress(show, percent = 0, message = '') {
-    if (!els.processingStatusArea) return;
-
-    if (show) {
-      els.processingStatusArea.style.display = 'block';
-      els.progressBarFill.style.width = `${percent}%`;
-      els.statusMessage.textContent = message;
-    } else {
-      els.processingStatusArea.style.display = 'none';
-      els.progressBarFill.style.width = '0%';
+  // --- TOOL 1: UNIR PDF RUNNER ---
+  async function runUnirTool() {
+    if (state.filesList.length < 2) {
+      throw new Error('Selecciona al menos 2 documentos PDF para poder unirlos.');
     }
-  }
 
-  function showSuccessResult(title, description) {
-    showLoadingProgress(false);
-    els.resultSuccessBox.style.display = 'block';
-    els.resultTitle.textContent = title;
-    els.resultDesc.textContent = description;
-    els.btnExecuteTool.style.display = 'none';
+    showStatus('Iniciando unión de documentos...', 10);
 
-    els.resultSuccessBox.scrollIntoView({ behavior: 'smooth' });
-    showToast(title, 'success');
-  }
-
-  // --- MODALS (Acerca de & Privacidad) ---
-  function setupModals() {
-    const aboutLinks = document.querySelectorAll('.nav-link-about, .footer-link-about');
-    const privacyLinks = document.querySelectorAll('.nav-link-privacy, .footer-link-privacy');
-
-    aboutLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        openModal(els.modalAbout);
-      });
-    });
-
-    privacyLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        openModal(els.modalPrivacy);
-      });
-    });
-
-    // Close buttons
-    document.querySelectorAll('.modal-close-btn, .modal-backdrop').forEach(el => {
-      el.addEventListener('click', (e) => {
-        if (e.target === el || el.classList.contains('modal-close-btn') || el.closest('.modal-close-btn')) {
-          closeAllModals();
-        }
-      });
-    });
-
-    // Escape key
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeAllModals();
+    const buffers = [];
+    for (let i = 0; i < state.filesList.length; i++) {
+      const item = state.filesList[i];
+      if (item.buffer) {
+        buffers.push(item.buffer);
+      } else {
+        const b = await item.file.arrayBuffer();
+        item.buffer = b;
+        buffers.push(b);
       }
+    }
+
+    const mergedBytes = await PDFEngine.mergePDFs(buffers, (pct, msg) => {
+      showStatus(msg, pct);
+    });
+
+    const resultBlob = new Blob([mergedBytes], { type: 'application/pdf' });
+    const filename = 'documentos_unidos.pdf';
+
+    displayResultSuccess({
+      blob: resultBlob,
+      filename: filename,
+      title: '¡PDFs unidos con éxito!',
+      desc: `Se combinaron ${state.filesList.length} documentos en un solo archivo PDF correlativo y listo para descargar.`,
+      statsHtml: `
+        <div class="result-stats-pill">
+          <span>Total de archivos unidos: <strong>${state.filesList.length}</strong></span>
+          <span>•</span>
+          <span>Tamaño final: <strong>${PDFEngine.formatBytes(resultBlob.size)}</strong></span>
+        </div>
+      `
     });
   }
 
-  function openModal(modal) {
-    if (!modal) return;
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
+  // --- TOOL 2: DIVIDIR PDF RUNNER ---
+  async function runDividirTool() {
+    if (!state.primaryFileBuffer || !state.primaryPdfInfo) {
+      throw new Error('Carga un archivo PDF válido primero.');
+    }
+
+    const modeSelect = document.getElementById('splitModeSelect');
+    const mode = modeSelect ? modeSelect.value : 'range';
+    const baseName = state.primaryFile.name.replace(/\.pdf$/i, '');
+
+    if (mode === 'all-zip') {
+      showStatus('Separando páginas individuales...', 10);
+      const zipBlob = await PDFEngine.splitAllPagesToZip(
+        state.primaryFileBuffer,
+        baseName,
+        (pct, msg) => showStatus(msg, pct)
+      );
+
+      const filename = `${baseName}_paginas_separadas.zip`;
+
+      displayResultSuccess({
+        blob: zipBlob,
+        filename: filename,
+        title: '¡Páginas separadas con éxito!',
+        desc: `Se generó un archivo ZIP con las ${state.primaryPdfInfo.pageCount} páginas del documento en archivos PDF individuales.`,
+        statsHtml: `
+          <div class="result-stats-pill">
+            <span>Páginas extraídas: <strong>${state.primaryPdfInfo.pageCount}</strong></span>
+            <span>•</span>
+            <span>Tamaño ZIP: <strong>${PDFEngine.formatBytes(zipBlob.size)}</strong></span>
+          </div>
+        `
+      });
+    } else {
+      // Range mode
+      const rangeInput = document.getElementById('splitRangeInput');
+      const rangeStr = rangeInput ? rangeInput.value.trim() : '';
+
+      if (!rangeStr) {
+        throw new Error('Indica las páginas o rangos que deseas extraer (ejemplo: 1-3, 5).');
+      }
+
+      showStatus('Extrayendo páginas seleccionadas...', 15);
+      const splitResult = await PDFEngine.splitPDF(
+        state.primaryFileBuffer,
+        rangeStr,
+        (pct, msg) => showStatus(msg, pct)
+      );
+
+      const resultBlob = new Blob([splitResult.bytes], { type: 'application/pdf' });
+      const filename = `${baseName}_dividido.pdf`;
+
+      displayResultSuccess({
+        blob: resultBlob,
+        filename: filename,
+        title: '¡División de PDF completada!',
+        desc: `Se extrajeron correctamente ${splitResult.pagesExtracted} ${splitResult.pagesExtracted === 1 ? 'página' : 'páginas'} en tu nuevo documento PDF.`,
+        statsHtml: `
+          <div class="result-stats-pill">
+            <span>Páginas en el nuevo documento: <strong>${splitResult.pagesExtracted}</strong> de ${state.primaryPdfInfo.pageCount}</span>
+            <span>•</span>
+            <span>Tamaño final: <strong>${PDFEngine.formatBytes(resultBlob.size)}</strong></span>
+          </div>
+        `
+      });
+    }
   }
 
-  function closeAllModals() {
-    document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
-    document.body.style.overflow = '';
+  // --- TOOL 3: JPG A PDF RUNNER ---
+  async function runJpg2PdfTool() {
+    if (state.filesList.length === 0) {
+      throw new Error('Selecciona al menos una imagen para convertir a PDF.');
+    }
+
+    showStatus('Cargando imágenes para conversión...', 10);
+
+    const fitSelect = document.getElementById('jpgFitSelect');
+    const marginSelect = document.getElementById('jpgMarginSelect');
+
+    const options = {
+      fit: fitSelect ? fitSelect.value : 'a4-portrait',
+      margin: marginSelect ? marginSelect.value : 'small'
+    };
+
+    const imageFiles = state.filesList.map(item => item.file);
+
+    const pdfBytes = await PDFEngine.imagesToPDF(imageFiles, options, (pct, msg) => {
+      showStatus(msg, pct);
+    });
+
+    const resultBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const filename = 'imagenes_convertidas.pdf';
+
+    displayResultSuccess({
+      blob: resultBlob,
+      filename: filename,
+      title: '¡Imágenes convertidas a PDF con éxito!',
+      desc: `Se crearon ${state.filesList.length} ${state.filesList.length === 1 ? 'página' : 'páginas'} en un nuevo documento PDF con alta calidad de imagen.`,
+      statsHtml: `
+        <div class="result-stats-pill">
+          <span>Imágenes convertidas: <strong>${state.filesList.length}</strong></span>
+          <span>•</span>
+          <span>Tamaño final del PDF: <strong>${PDFEngine.formatBytes(resultBlob.size)}</strong></span>
+        </div>
+      `
+    });
+  }
+
+  // --- TOOL 4: COMPRIMIR PDF RUNNER ---
+  async function runComprimirTool() {
+    if (!state.primaryFileBuffer) {
+      throw new Error('Carga un archivo PDF para comprimir.');
+    }
+
+    showStatus('Iniciando compresión de alta calidad...', 8);
+
+    const selectedRadio = document.querySelector('input[name="compressionLevel"]:checked');
+    const level = selectedRadio ? selectedRadio.value : 'recommended';
+
+    const result = await PDFEngine.compressPDF(
+      state.primaryFileBuffer,
+      level,
+      (pct, msg) => showStatus(msg, pct)
+    );
+
+    const resultBlob = new Blob([result.bytes], { type: 'application/pdf' });
+    const baseName = state.primaryFile.name.replace(/\.pdf$/i, '');
+    const filename = `${baseName}_comprimido.pdf`;
+
+    const diff = result.originalSize - result.compressedSize;
+    const savingsPct = result.originalSize > 0 ? Math.round((diff / result.originalSize) * 100) : 0;
+
+    let statsCardHtml = '';
+    if (diff > 0) {
+      statsCardHtml = `
+        <div class="compression-comparison-card">
+          <div class="comp-stat-item">
+            <span class="comp-stat-label">Tamaño original:</span>
+            <span class="comp-stat-value orig">${PDFEngine.formatBytes(result.originalSize)}</span>
+          </div>
+          <div class="comp-stat-arrow">
+            <i data-lucide="arrow-right"></i>
+          </div>
+          <div class="comp-stat-item">
+            <span class="comp-stat-label">Tamaño optimizado:</span>
+            <span class="comp-stat-value final">${PDFEngine.formatBytes(result.compressedSize)}</span>
+          </div>
+          <div class="comp-stat-item highlight">
+            <span class="comp-stat-label">Reducción lograda:</span>
+            <span class="comp-stat-value savings">-${savingsPct}% (${PDFEngine.formatBytes(diff)})</span>
+          </div>
+        </div>
+      `;
+    } else {
+      statsCardHtml = `
+        <div class="compression-comparison-card">
+          <div class="comp-stat-item">
+            <span class="comp-stat-label">Tamaño original:</span>
+            <span class="comp-stat-value">${PDFEngine.formatBytes(result.originalSize)}</span>
+          </div>
+          <div class="comp-stat-item">
+            <span class="comp-stat-label">Tamaño final:</span>
+            <span class="comp-stat-value">${PDFEngine.formatBytes(result.compressedSize)}</span>
+          </div>
+          <div class="comp-stat-item" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 0.8125rem;">
+            Tu documento ya contaba con una compresión óptima. Se mantuvo su tamaño y nitidez original sin alterar la calidad visual.
+          </div>
+        </div>
+      `;
+    }
+
+    displayResultSuccess({
+      blob: resultBlob,
+      filename: filename,
+      title: '¡Compresión completada con éxito!',
+      desc: 'El archivo ha sido optimizado protegiendo la nitidez del texto y la calidad visual de las imágenes.',
+      statsHtml: statsCardHtml
+    });
+  }
+
+  // --- RESULT DISPLAY & DOWNLOAD ---
+  function displayResultSuccess({ blob, filename, title, desc, statsHtml }) {
+    hideStatus();
+
+    state.currentResultBlob = blob;
+    state.lastResultFilename = filename;
+
+    if (els.resultTitle) els.resultTitle.textContent = title;
+    if (els.resultDesc) els.resultDesc.textContent = desc;
+    if (els.resultCustomStats) els.resultCustomStats.innerHTML = statsHtml || '';
+
+    if (els.btnDownloadMain) {
+      els.btnDownloadMain.innerHTML = `
+        <i data-lucide="download"></i>
+        <span>Descargar ${filename}</span>
+      `;
+    }
+
+    if (els.resultSuccessBox) {
+      els.resultSuccessBox.style.display = 'block';
+      els.resultSuccessBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (els.btnExecuteTool) els.btnExecuteTool.disabled = false;
+
+    if (window.lucide) window.lucide.createIcons();
+    showToast('Proceso finalizado. Tu archivo está listo para descargar.', 'success');
+  }
+
+  // --- STATUS & PROGRESS UI ---
+  function showStatus(message, percentage = 0) {
+    if (els.processingStatusArea) els.processingStatusArea.style.display = 'block';
+    if (els.statusMessage) els.statusMessage.textContent = message;
+    if (els.progressBarFill) els.progressBarFill.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+  }
+
+  function hideStatus() {
+    if (els.processingStatusArea) els.processingStatusArea.style.display = 'none';
+  }
+
+  // --- CONTACT FORM HANDLER ---
+  function setupContactForm() {
+    if (!els.contactForm) return;
+
+    els.contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('contactName')?.value;
+      const email = document.getElementById('contactEmail')?.value;
+      const message = document.getElementById('contactMessage')?.value;
+
+      if (!name || !email || !message) {
+        showToast('Por favor completa todos los campos requeridos.', 'error');
+        return;
+      }
+
+      // Show immediate confirmation
+      if (els.contactSuccessAlert) {
+        els.contactSuccessAlert.style.display = 'flex';
+      }
+      els.contactForm.reset();
+      showToast('¡Mensaje enviado con éxito! Te responderemos a la brevedad.', 'success');
+      if (window.lucide) window.lucide.createIcons();
+    });
   }
 
   // --- TOAST NOTIFICATIONS ---
@@ -1448,32 +1261,30 @@
 
     const toast = document.createElement('div');
     toast.className = `toast-item toast-${type}`;
-    
+
     let iconName = 'info';
     if (type === 'success') iconName = 'check-circle';
     if (type === 'error') iconName = 'alert-triangle';
 
     toast.innerHTML = `
-      <i data-lucide="${iconName}"></i>
+      <i data-lucide="${iconName}" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
       <span>${message}</span>
     `;
 
     els.toastContainer.appendChild(toast);
-    refreshLucideIcons();
+    if (window.lucide) window.lucide.createIcons();
 
     setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateX(100%)';
       toast.style.transition = 'all 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, 3800);
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 300);
+    }, 4500);
   }
 
-  // Expose global methods for inline triggers
-  window.openTool = openTool;
-  window.closeTool = closeTool;
-
-  // Run on page load
+  // Kickstart app when DOM is loaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

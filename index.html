@@ -6,10 +6,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Herramientas PDF - Suite de Herramientas PDF Gratis y Online</title>
-  <meta name="description" content="Suite completa de herramientas PDF gratuitas: unir, dividir, comprimir, girar, convertir JPG/PDF, eliminar, extraer, ordenar y añadir páginas directamente en tu navegador.">
-  <meta property="og:title" content="Herramientas PDF - Suite de Herramientas PDF Gratis y Online">
-  <meta property="og:description" content="Suite completa de herramientas PDF gratuitas: unir, dividir, comprimir, girar, convertir JPG/PDF, eliminar, extraer, ordenar y añadir páginas directamente en tu navegador.">
+  <title>Herramientas PDF - Herramientas PDF gratuitas, sencillas y rápidas</title>
+  <meta name="description" content="Herramientas PDF gratuitas, sencillas y rápidas para trabajar con tus documentos: unir, dividir, comprimir y convertir imágenes JPG a PDF directamente en tu navegador.">
+  <meta property="og:title" content="Herramientas PDF - Herramientas PDF gratuitas, sencillas y rápidas">
+  <meta property="og:description" content="Herramientas PDF gratuitas, sencillas y rápidas para trabajar con tus documentos: unir, dividir, comprimir y convertir imágenes JPG a PDF directamente en tu navegador.">
 
   <!-- Core Stylesheet -->
   <link rel="stylesheet" href="css/styles.css">
@@ -17,9 +17,9 @@
   <!-- External Free Client-Side Libraries -->
   <!-- pdf-lib for fast PDF manipulation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-  <!-- PDF.js for rendering PDF pages to canvas (thumbnails, PDF to JPG, compression) -->
+  <!-- PDF.js for rendering PDF pages to canvas (compression) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <!-- JSZip for multi-page downloads -->
+  <!-- JSZip for multi-page zip downloads -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <!-- Lucide icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -27,11 +27,11 @@
 <body>
 
   <!-- =========================================================================
-       HEADER
+       HEADER & NAVIGATION
        ========================================================================= -->
   <header class="site-header" id="mainHeader">
     <div class="container header-inner">
-      <a href="#" class="logo-brand" id="brandLogo" onclick="if(window.closeTool){window.closeTool();} window.scrollTo({top:0, behavior:'smooth'}); return false;">
+      <a href="#inicio" class="logo-brand" id="brandLogo" onclick="if(window.closeTool){window.closeTool();} return true;">
         <div class="logo-icon">
           <i data-lucide="file-text"></i>
         </div>
@@ -39,68 +39,65 @@
       </a>
 
       <nav>
-        <ul class="nav-menu">
-          <li><a href="#herramientas" class="nav-link" id="navLinkHerramientas"><i data-lucide="grid"></i> Herramientas</a></li>
-          <li><a href="#ventajas" class="nav-link" id="navLinkVentajas"><i data-lucide="sparkles"></i> Ventajas</a></li>
-          <li><a href="#acerca" class="nav-link nav-link-about"><i data-lucide="info"></i> Acerca de</a></li>
-          <li><a href="#privacidad" class="nav-link nav-link-privacy"><i data-lucide="shield-check"></i> Privacidad</a></li>
+        <ul class="nav-menu" id="navMenu">
+          <li><a href="#inicio" class="nav-link"><i data-lucide="home"></i> Inicio</a></li>
+          <li><a href="#herramientas" class="nav-link"><i data-lucide="grid"></i> Herramientas</a></li>
+          <li><a href="#como-funciona" class="nav-link"><i data-lucide="help-circle"></i> Cómo funciona</a></li>
+          <li><a href="#faq" class="nav-link"><i data-lucide="message-circle"></i> Preguntas frecuentes</a></li>
+          <li><a href="#acerca-de" class="nav-link"><i data-lucide="info"></i> Acerca de</a></li>
+          <li><a href="#privacidad" class="nav-link"><i data-lucide="shield-check"></i> Privacidad</a></li>
         </ul>
       </nav>
 
       <div class="header-actions">
-        <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Cambiar tema claro/oscuro">
+        <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema">
           <i data-lucide="moon"></i>
+        </button>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú de navegación">
+          <i data-lucide="menu"></i>
         </button>
       </div>
     </div>
   </header>
 
   <main>
-    <!-- =========================================================================
-         TOP ADVERTISEMENT SLOT (Google AdSense Ready)
-         ========================================================================= -->
-    <div class="container ad-slot-container" id="adTopSlot">
-      <div class="ad-banner-slot">
-        <span class="ad-label">Espacio Publicitario</span>
-        <span style="font-size: 0.8125rem;">Anuncio adaptativo disponible</span>
-      </div>
-    </div>
+    <!-- Espacio estructural preparado para Google AdSense: Anuncio Cabecera -->
+    <div class="adsense-slot-wrapper" id="adsenseHeaderSlot" aria-hidden="true"></div>
 
     <!-- =========================================================================
          HERO SECTION
          ========================================================================= -->
-    <section class="hero-section" id="heroSection">
+    <section class="hero-section" id="inicio">
       <div class="container">
         <div class="hero-badge">
           <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
-          100% Gratis • Sin registro • Seguro en tu navegador
+          100% Gratis • Sin registro • Procesamiento en tu navegador
         </div>
 
         <h1 class="hero-title">
-          Tus documentos PDF, <span>más fáciles que nunca</span>
+          Herramientas <span>PDF</span>
         </h1>
 
         <p class="hero-subtitle">
-          Une, divide, comprime, rota, convierte y edita tus archivos PDF directamente desde tu navegador.
-          Tus archivos nunca salen de tu dispositivo, garantizando total privacidad y velocidad.
+          Herramientas PDF gratuitas, sencillas y rápidas para trabajar con tus documentos.
         </p>
 
         <div class="hero-trust-bar">
+          <div class="trust-item">
+            <i data-lucide="check-circle-2" style="width: 18px; height: 18px;"></i>
+            <span>4 Herramientas esenciales</span>
+          </div>
           <div class="trust-item">
             <i data-lucide="check-circle-2" style="width: 18px; height: 18px;"></i>
             <span>Sin límites artificiales</span>
           </div>
           <div class="trust-item">
             <i data-lucide="check-circle-2" style="width: 18px; height: 18px;"></i>
-            <span>Procesamiento local ultrarrápido</span>
+            <span>Procesamiento local privado</span>
           </div>
           <div class="trust-item">
             <i data-lucide="check-circle-2" style="width: 18px; height: 18px;"></i>
-            <span>Compatible con móviles y PC</span>
-          </div>
-          <div class="trust-item">
-            <i data-lucide="check-circle-2" style="width: 18px; height: 18px;"></i>
-            <span>Privacidad garantizada</span>
+            <span>PC, tablet y móvil</span>
           </div>
         </div>
       </div>
@@ -112,11 +109,11 @@
     <section class="workspace-section" id="workspaceSection">
       <div class="container">
         <div class="workspace-card">
-          <!-- Top bar with Back Button & Tool Info -->
+          <!-- Top bar with Back Button, Tool Info & Reset Button -->
           <div class="workspace-header">
             <button class="back-to-tools-btn" id="backToToolsBtn">
               <i data-lucide="arrow-left"></i>
-              <span>Volver a todas las herramientas</span>
+              <span>Volver a las herramientas</span>
             </button>
 
             <div class="active-tool-info">
@@ -125,9 +122,14 @@
               </div>
               <div>
                 <h2 class="active-tool-name" id="activeToolName">Unir PDF</h2>
-                <p class="active-tool-desc" id="activeToolDesc">Combina varios archivos PDF en un solo documento.</p>
+                <p class="active-tool-desc" id="activeToolDesc">Combina múltiples documentos PDF en un solo archivo.</p>
               </div>
             </div>
+
+            <button type="button" class="btn-secondary-sm" id="btnResetTool" title="Limpiar y reiniciar la herramienta actual">
+              <i data-lucide="rotate-ccw"></i>
+              <span>Reiniciar</span>
+            </button>
           </div>
 
           <!-- Upload Drop Zone -->
@@ -136,7 +138,7 @@
               <i data-lucide="upload-cloud" style="width: 32px; height: 32px;"></i>
             </div>
             <h3 class="dropzone-title">Arrastra y suelta tus archivos aquí</h3>
-            <p class="dropzone-text" id="dropzoneText">o selecciona un archivo PDF desde tu dispositivo</p>
+            <p class="dropzone-text" id="dropzoneText">o selecciona tus archivos desde tu dispositivo</p>
             <div class="dropzone-btn">
               <i data-lucide="folder-open"></i>
               <span>Seleccionar archivo(s)</span>
@@ -144,7 +146,7 @@
             <input type="file" id="fileInput" style="display: none;" />
           </div>
 
-          <!-- File Details Bar (Single file tools) -->
+          <!-- File Details Bar (Single file tools: Dividir, Comprimir) -->
           <div class="file-details-bar" id="fileDetailsBar">
             <div class="file-info-group">
               <div class="file-icon-badge">
@@ -173,7 +175,7 @@
               <button type="button" class="btn-secondary-sm" id="btnAddMoreFiles">
                 <i data-lucide="plus"></i> Añadir más archivos
               </button>
-              <input type="file" id="moreFileInput" multiple accept=".pdf,image/jpeg,image/png,image/webp" style="display: none;" />
+              <input type="file" id="moreFileInput" multiple style="display: none;" />
             </div>
             <div class="multi-files-list" id="multiFilesList"></div>
           </div>
@@ -181,15 +183,6 @@
           <!-- Tool Specific Options Panel -->
           <div class="tool-options-panel" id="toolOptionsPanel">
             <div id="toolOptionsDynamicContent"></div>
-          </div>
-
-          <!-- Interactive Page Thumbnails Grid (Girar, Eliminar, Extraer, Ordenar) -->
-          <div class="page-thumbnails-wrapper" id="pageThumbnailsWrapper">
-            <div class="thumbnails-toolbar">
-              <div class="thumbnails-stats" id="thumbnailsStats">Páginas cargadas</div>
-              <div class="thumbnails-actions" id="thumbnailsActions"></div>
-            </div>
-            <div class="page-grid" id="pageGrid"></div>
           </div>
 
           <!-- Processing & Progress Bar -->
@@ -207,6 +200,9 @@
             </div>
             <h3 class="result-title" id="resultTitle">¡Documento procesado correctamente!</h3>
             <p class="result-desc" id="resultDesc">Tu nuevo archivo está listo para descargar de forma segura.</p>
+            
+            <div id="resultCustomStats" style="margin-bottom: 1.25rem;"></div>
+
             <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
               <button type="button" class="btn-download-main" id="btnDownloadMain">
                 <i data-lucide="download"></i>
@@ -220,109 +216,378 @@
           </div>
 
           <!-- Main Action Button -->
-          <div style="text-align: center;">
+          <div style="text-align: center; margin-top: 1.5rem;">
             <button type="button" class="btn-action-primary" id="btnExecuteTool" disabled>
               Ejecutar acción
             </button>
           </div>
         </div>
-
-        <!-- In-Workspace AdSlot (Non-intrusive bottom slot) -->
-        <div class="ad-slot-container" style="margin-top: 2rem;">
-          <div class="ad-banner-slot">
-            <span class="ad-label">Espacio Publicitario</span>
-            <span style="font-size: 0.8125rem;">Anuncio disponible</span>
-          </div>
-        </div>
       </div>
     </section>
 
     <!-- =========================================================================
-         TOOLS SHOWCASE (Homepage Grid)
+         HERRAMIENTAS DISPONIBLES (4 Herramientas)
          ========================================================================= -->
     <section class="tools-section" id="herramientas">
       <div class="container">
-        <div class="section-header">
+        <div class="section-header" style="text-align: center; justify-content: center; margin-bottom: 2.5rem;">
           <div>
-            <h2 class="section-title">Herramientas PDF</h2>
+            <h2 class="section-title">Nuestras 4 Herramientas PDF</h2>
             <p class="section-desc">Selecciona la función que necesitas para tu documento</p>
-          </div>
-
-          <!-- Categories filter -->
-          <div class="tools-filter-bar">
-            <button class="filter-btn active" data-category="all">Todas</button>
-            <button class="filter-btn" data-category="organizar">Organizar</button>
-            <button class="filter-btn" data-category="optimizar">Optimizar & Convertir</button>
-            <button class="filter-btn" data-category="editar">Editar páginas</button>
           </div>
         </div>
 
-        <!-- Grid dynamically populated by app.js -->
+        <!-- Grid dynamically populated by app.js with the 4 tools -->
         <div class="tools-grid" id="toolsGrid"></div>
       </div>
     </section>
 
-    <!-- =========================================================================
-         MID-PAGE ADVERTISEMENT SLOT
-         ========================================================================= -->
-    <div class="container ad-slot-container">
-      <div class="ad-banner-slot">
-        <span class="ad-label">Espacio Publicitario</span>
-        <span style="font-size: 0.8125rem;">Banner patrocinado</span>
-      </div>
-    </div>
+    <!-- Espacio estructural preparado para Google AdSense: Bloque Contenido -->
+    <div class="adsense-slot-wrapper" id="adsenseContentSlot" aria-hidden="true"></div>
 
     <!-- =========================================================================
-         VENTAJAS & CARACTERÍSTICAS
+         SECCIÓN: ¿QUÉ PUEDES HACER CON HERRAMIENTAS PDF?
          ========================================================================= -->
-    <section class="features-section" id="ventajas">
+    <section class="content-section" id="que-puedes-hacer">
       <div class="container">
-        <div class="section-header" style="text-align: center; justify-content: center; margin-bottom: 3rem;">
+        <div class="section-header" style="text-align: center; justify-content: center; margin-bottom: 2.5rem;">
           <div>
-            <h2 class="section-title">¿Por qué usar Herramientas PDF?</h2>
-            <p class="section-desc">La forma más rápida, segura y limpia de gestionar documentos.</p>
+            <h2 class="section-title">¿Qué puedes hacer con Herramientas PDF?</h2>
+            <p class="section-desc">Soluciones directas y enfocadas para resolver tus necesidades con documentos digitales.</p>
           </div>
         </div>
 
         <div class="features-grid">
           <div class="feature-card">
-            <div class="feature-icon">
-              <i data-lucide="shield"></i>
+            <div class="feature-icon tool-icon-blue">
+              <i data-lucide="files"></i>
             </div>
             <div>
-              <h3 class="feature-title">100% Seguro y Privado</h3>
+              <h3 class="feature-title">1. Unir PDF</h3>
               <p class="feature-desc">
-                A diferencia de otras plataformas, tus documentos se procesan en tu propio navegador usando WebAssembly y JavaScript moderno. Tus archivos nunca viajan por la red.
+                Combina varios documentos PDF en un solo archivo continuo. Puedes agregar múltiples PDFs, organizar y cambiar su orden con facilidad, y generar un documento limpio sin perder nitidez en textos ni vectores.
               </p>
             </div>
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon">
-              <i data-lucide="zap"></i>
+            <div class="feature-icon tool-icon-rose">
+              <i data-lucide="scissors"></i>
             </div>
             <div>
-              <h3 class="feature-title">Sin esperas ni colas</h3>
+              <h3 class="feature-title">2. Dividir PDF</h3>
               <p class="feature-desc">
-                No tienes que esperar a subir o descargar archivos gigantescos de servidores lejanos. La conversión y edición ocurren al instante con la potencia de tu equipo.
+                Extrae páginas individuales o define rangos precisos (por ejemplo: 1, 1-3, 1,3,5 o 2-4,7). El sistema lee el total de páginas de tu documento y te permite crear un nuevo PDF con las páginas exactas que necesitas.
               </p>
             </div>
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon">
-              <i data-lucide="unlock"></i>
+            <div class="feature-icon tool-icon-purple">
+              <i data-lucide="image"></i>
             </div>
             <div>
-              <h3 class="feature-title">Completamente Gratis</h3>
+              <h3 class="feature-title">3. JPG a PDF</h3>
               <p class="feature-desc">
-                Sin suscripciones ocultas, sin límites de tareas diarias, sin necesidad de crear cuentas ni ingresar tarjetas de crédito. Siempre disponible.
+                Convierte una o varias imágenes JPG o JPEG en un documento PDF listo para imprimir o enviar. Incluye vista previa de cada imagen, ajuste de orden y opciones de formato en hoja A4 vertical, apaisada o tamaño original.
+              </p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon tool-icon-green">
+              <i data-lucide="minimize-2"></i>
+            </div>
+            <div>
+              <h3 class="feature-title">4. Comprimir PDF</h3>
+              <p class="feature-desc">
+                Optimiza el tamaño de tu archivo PDF de manera equilibrada y no agresiva. Prioriza conservar la nitidez del texto y la calidad visual de las fotos. Si tu archivo ya está optimizado, no lo degrada innecesariamente.
               </p>
             </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- =========================================================================
+         SECCIÓN: ¿CÓMO UTILIZAR NUESTRAS HERRAMIENTAS?
+         ========================================================================= -->
+    <section class="content-section bg-alt" id="como-funciona">
+      <div class="container">
+        <div class="section-header" style="text-align: center; justify-content: center; margin-bottom: 2.5rem;">
+          <div>
+            <h2 class="section-title">¿Cómo utilizar nuestras herramientas?</h2>
+            <p class="section-desc">Trabajar con tus archivos toma menos de tres pasos sencillos.</p>
+          </div>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <div class="step-icon">
+              <i data-lucide="upload"></i>
+            </div>
+            <h3 class="step-title">Selecciona tus archivos</h3>
+            <p class="step-desc">
+              Arrastra y suelta tu documento PDF o imágenes JPG en el área de carga, o haz clic para buscarlos en tu computadora, tableta o teléfono móvil.
+            </p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <div class="step-icon">
+              <i data-lucide="sliders"></i>
+            </div>
+            <h3 class="step-title">Ajusta las opciones</h3>
+            <p class="step-desc">
+              Organiza el orden de los archivos, escribe las páginas o rangos que deseas extraer (ej. 1-3, 5) o selecciona el nivel de compresión que prefieras.
+            </p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <div class="step-icon">
+              <i data-lucide="download"></i>
+            </div>
+            <h3 class="step-title">Descarga el resultado</h3>
+            <p class="step-desc">
+              Haz clic en el botón de acción principal y en pocos segundos tendrás tu archivo procesado listo para guardar en tu dispositivo de inmediato.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECCIÓN: PREGUNTAS FRECUENTES (FAQ)
+         ========================================================================= -->
+    <section class="content-section" id="faq">
+      <div class="container">
+        <div class="section-header" style="text-align: center; justify-content: center; margin-bottom: 2.5rem;">
+          <div>
+            <h2 class="section-title">Preguntas frecuentes</h2>
+            <p class="section-desc">Respuestas claras y útiles a las dudas más comunes sobre nuestras herramientas.</p>
+          </div>
+        </div>
+
+        <div class="faq-container">
+          <details class="faq-item" open>
+            <summary class="faq-question">
+              <span>¿El servicio de Herramientas PDF tiene algún costo?</span>
+              <i data-lucide="chevron-down" class="faq-chevron"></i>
+            </summary>
+            <div class="faq-answer">
+              <p>
+                No. Todas las herramientas disponibles (Unir PDF, Dividir PDF, JPG a PDF y Comprimir PDF) son completamente gratuitas. No solicitamos tarjetas de crédito, suscripciones ni creación de cuentas.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>¿Cómo funciona la compresión de PDF y por qué no pierde calidad el texto?</span>
+              <i data-lucide="chevron-down" class="faq-chevron"></i>
+            </summary>
+            <div class="faq-answer">
+              <p>
+                Nuestra herramienta de compresión aplica una reducción equilibrada y moderada. En lugar de comprimir de forma agresiva o borrosa, optimiza los flujos de objetos del archivo y renderiza a una resolución adecuada para lectura (~150 DPI). Si un archivo ya se encuentra en su tamaño óptimo, el sistema lo detecta y conserva su calidad original.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>¿Qué sintaxis puedo usar para indicar páginas en Dividir PDF?</span>
+              <i data-lucide="chevron-down" class="faq-chevron"></i>
+            </summary>
+            <div class="faq-answer">
+              <p>
+                Puedes indicar páginas individuales separadas por comas (como <code>1, 3, 5</code>), rangos continuos con guion (como <code>1-3</code>), o combinar ambos formatos según tus necesidades (por ejemplo: <code>2-4, 7</code>). El sistema valida automáticamente las páginas contra el total de tu documento.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>¿Puedo cambiar el orden de las imágenes en JPG a PDF?</span>
+              <i data-lucide="chevron-down" class="faq-chevron"></i>
+            </summary>
+            <div class="faq-answer">
+              <p>
+                Sí. Al seleccionar tus imágenes JPG, verás una lista con una vista previa en miniatura de cada una de ellas y botones para moverlas hacia arriba o hacia abajo. Así puedes organizar la secuencia exacta en la que aparecerán dentro del documento PDF final.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>¿Existe algún límite en la cantidad de archivos para Unir PDF?</span>
+              <i data-lucide="chevron-down" class="faq-chevron"></i>
+            </summary>
+            <div class="faq-answer">
+              <p>
+                Puedes añadir dos o más archivos PDF y combinarlos en un solo documento. La capacidad está respaldada por la memoria de tu propio navegador web, lo que permite trabajar cómodamente con documentos cotidianos de estudio o trabajo.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>¿Funciona en teléfonos móviles y tabletas?</span>
+              <i data-lucide="chevron-down" class="faq-chevron"></i>
+            </summary>
+            <div class="faq-answer">
+              <p>
+                Sí. La interfaz está diseñada para adaptarse tanto a pantallas de escritorio como a pantallas táctiles de teléfonos móviles y tabletas, permitiéndote seleccionar archivos desde tu galería o explorador de archivos móvil.
+              </p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECCIÓN: ACERCA DE HERRAMIENTAS PDF
+         ========================================================================= -->
+    <section class="content-section bg-alt" id="acerca-de">
+      <div class="container">
+        <div class="content-text-block">
+          <h2 class="section-title">Acerca de Herramientas PDF</h2>
+          <p>
+            <strong>Herramientas PDF</strong> es una plataforma web creada para brindar a estudiantes, docentes, profesionales y usuarios particulares un conjunto de herramientas esenciales para el manejo diario de documentos PDF.
+          </p>
+          <p>
+            El objetivo del proyecto es mantener la sencillez: en lugar de saturar la interfaz con opciones confusas o herramientas redundantes, nos enfocamos en ofrecer con la más alta calidad las 4 utilidades que los usuarios necesitan con mayor frecuencia: <strong>Unir PDF, Dividir PDF, JPG a PDF y Comprimir PDF</strong>.
+          </p>
+          <p>
+            El desarrollo del sitio prioriza la rapidez de carga, una experiencia accesible y un diseño limpio sin ventanas emergentes invasivas ni procedimientos engorrosos.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECCIÓN: PRIVACIDAD
+         ========================================================================= -->
+    <section class="content-section" id="privacidad">
+      <div class="container">
+        <div class="content-text-block">
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+            <div class="feature-icon tool-icon-green" style="margin-bottom: 0; width: 44px; height: 44px;">
+              <i data-lucide="shield-check"></i>
+            </div>
+            <h2 class="section-title" style="margin-bottom: 0;">Privacidad y Manejo de Archivos</h2>
+          </div>
+
+          <p>
+            En <strong>Herramientas PDF</strong>, explicamos con total claridad y honestidad cómo se gestionan tus archivos al utilizar nuestras herramientas:
+          </p>
+
+          <div class="privacy-highlight-box">
+            <h3 style="font-size: 1.0625rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+              Procesamiento 100% en tu navegador web
+            </h3>
+            <p style="margin-bottom: 0.75rem;">
+              Todas las operaciones de unión, división, conversión de imágenes y compresión se ejecutan exclusivamente en el entorno local de tu navegador web mediante código JavaScript (utilizando tecnologías cliente como <em>pdf-lib</em> y <em>PDF.js</em>).
+            </p>
+            <p style="margin-bottom: 0;">
+              Esto significa que <strong>tus archivos no se suben a ningún servidor externo</strong>, no se transmiten por internet a bases de datos remotas ni son leídos o registrados por terceros. La manipulación ocurre en la memoria temporal de tu propio dispositivo. Al cerrar o refrescar la pestaña del navegador, cualquier información en memoria se descarta de inmediato.
+            </p>
+          </div>
+
+          <p>
+            Este enfoque técnico garantiza que puedas trabajar con documentos personales, académicos o de trabajo con la certeza de que tu información permanece en tu poder en todo momento.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECCIÓN: TÉRMINOS DE USO
+         ========================================================================= -->
+    <section class="content-section bg-alt" id="terminos">
+      <div class="container">
+        <div class="content-text-block">
+          <h2 class="section-title">Términos de uso</h2>
+          <p>
+            Al acceder y utilizar <strong>Herramientas PDF</strong>, aceptas los siguientes términos de uso sencillos y orientados al respeto mutuo:
+          </p>
+          <ul class="styled-list">
+            <li>
+              <strong>Uso gratuito y lícito:</strong> El servicio se brinda de manera libre y sin costo para uso personal, educativo y profesional, siempre que se emplee de conformidad con la ley aplicable y sin infringir derechos de autor o propiedad intelectual de terceros.
+            </li>
+            <li>
+              <strong>Responsabilidad sobre el contenido:</strong> Cada usuario es el único responsable de los archivos y documentos que decida procesar mediante las herramientas del sitio.
+            </li>
+            <li>
+              <strong>Disponibilidad del servicio:</strong> Nos esforzamos por mantener el sitio operativo de forma constante, rápida y estable, ofreciendo el servicio en el estado en que se encuentra ("tal cual"), sin garantías implícitas respecto a compatibilidades específicas de archivos muy deteriorados o formatos no estándar.
+            </li>
+            <li>
+              <strong>Propiedad intelectual:</strong> La estructura, diseño, textos originales y código fuente de la plataforma pertenecen a Herramientas PDF y están protegidos por las leyes correspondientes.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECCIÓN: CONTACTO
+         ========================================================================= -->
+    <section class="content-section" id="contacto">
+      <div class="container">
+        <div class="section-header" style="text-align: center; justify-content: center; margin-bottom: 2.5rem;">
+          <div>
+            <h2 class="section-title">Contacto</h2>
+            <p class="section-desc">¿Tienes dudas, sugerencias o comentarios? Escríbenos directamente.</p>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <form id="contactForm" class="contact-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="contactName" class="form-label">Nombre:</label>
+                <input type="text" id="contactName" class="form-input" placeholder="Tu nombre" required />
+              </div>
+              <div class="form-group">
+                <label for="contactEmail" class="form-label">Correo electrónico:</label>
+                <input type="email" id="contactEmail" class="form-input" placeholder="tu@correo.com" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="contactSubject" class="form-label">Herramienta o asunto:</label>
+              <select id="contactSubject" class="form-input">
+                <option value="general">Consulta general</option>
+                <option value="unir">Unir PDF</option>
+                <option value="dividir">Dividir PDF</option>
+                <option value="jpg2pdf">JPG a PDF</option>
+                <option value="comprimir">Comprimir PDF</option>
+                <option value="sugerencia">Sugerencia o mejora</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="contactMessage" class="form-label">Mensaje:</label>
+              <textarea id="contactMessage" class="form-textarea" rows="4" placeholder="Escribe aquí tu mensaje o sugerencia..." required></textarea>
+            </div>
+
+            <div style="text-align: right;">
+              <button type="submit" class="btn-action-primary" id="btnSubmitContact" style="margin-top: 0;">
+                <i data-lucide="send" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
+                Enviar mensaje
+              </button>
+            </div>
+          </form>
+
+          <div class="contact-success-alert" id="contactSuccessAlert">
+            <i data-lucide="check-circle" style="color: var(--accent-success); width: 22px; height: 22px;"></i>
+            <span>¡Gracias por tu mensaje! Hemos recibido tu comunicación correctamente.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- =========================================================================
@@ -332,121 +597,58 @@
     <div class="container">
       <div class="footer-top">
         <div class="footer-brand">
-          <a href="#" class="logo-brand" style="margin-bottom: 0.5rem; display: inline-flex;">
+          <a href="#inicio" class="logo-brand" style="margin-bottom: 0.75rem; display: inline-flex;">
             <div class="logo-icon">
               <i data-lucide="file-text"></i>
             </div>
             <div>Herramientas <span>PDF</span></div>
           </a>
           <p>
-            La plataforma en línea más rápida y respetuosa con tu privacidad para editar, unir y convertir documentos PDF directamente en tu navegador.
+            Herramientas PDF gratuitas, sencillas y rápidas para trabajar con tus documentos directamente en tu navegador con total privacidad y velocidad.
           </p>
         </div>
 
         <div class="footer-col">
-          <h4>Organizar</h4>
+          <h4>Nuestras 4 Herramientas</h4>
           <ul class="footer-links">
             <li><a href="#unir" onclick="if(window.openTool){window.openTool('unir');} return false;">Unir PDF</a></li>
             <li><a href="#dividir" onclick="if(window.openTool){window.openTool('dividir');} return false;">Dividir PDF</a></li>
-            <li><a href="#ordenar" onclick="if(window.openTool){window.openTool('ordenar');} return false;">Ordenar páginas</a></li>
-            <li><a href="#anadir" onclick="if(window.openTool){window.openTool('anadir');} return false;">Añadir páginas</a></li>
-            <li><a href="#eliminar" onclick="if(window.openTool){window.openTool('eliminar');} return false;">Eliminar páginas</a></li>
-            <li><a href="#extraer" onclick="if(window.openTool){window.openTool('extraer');} return false;">Extraer páginas</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h4>Optimizar & Convertir</h4>
-          <ul class="footer-links">
-            <li><a href="#comprimir" onclick="if(window.openTool){window.openTool('comprimir');} return false;">Comprimir PDF</a></li>
-            <li><a href="#girar" onclick="if(window.openTool){window.openTool('girar');} return false;">Girar PDF</a></li>
             <li><a href="#jpg2pdf" onclick="if(window.openTool){window.openTool('jpg2pdf');} return false;">JPG a PDF</a></li>
-            <li><a href="#pdf2jpg" onclick="if(window.openTool){window.openTool('pdf2jpg');} return false;">PDF a JPG</a></li>
+            <li><a href="#comprimir" onclick="if(window.openTool){window.openTool('comprimir');} return false;">Comprimir PDF</a></li>
           </ul>
         </div>
 
         <div class="footer-col">
-          <h4>Legal & Información</h4>
+          <h4>Información</h4>
           <ul class="footer-links">
-            <li><a href="#acerca" class="footer-link-about">Acerca del proyecto</a></li>
-            <li><a href="#privacidad" class="footer-link-privacy">Política de privacidad</a></li>
-            <li><a href="#ventajas" onclick="if(window.closeTool){window.closeTool();}">Ventajas técnicas</a></li>
+            <li><a href="#como-funciona">Cómo funciona</a></li>
+            <li><a href="#faq">Preguntas frecuentes</a></li>
+            <li><a href="#acerca-de">Acerca de Herramientas PDF</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Legal & Contacto</h4>
+          <ul class="footer-links">
+            <li><a href="#privacidad">Política de privacidad</a></li>
+            <li><a href="#terminos">Términos de uso</a></li>
+            <li><a href="#contacto">Contacto</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom">
         <div>© 2026 Herramientas PDF. Todos los derechos reservados. Procesamiento local en navegador.</div>
-        <div style="display: flex; gap: 1rem;">
-          <a href="#privacidad" class="footer-link-privacy" style="color: var(--text-muted); text-decoration: none;">Privacidad 100% local</a>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <a href="#privacidad" style="color: var(--text-muted); text-decoration: none;">Privacidad local</a>
           <span>•</span>
-          <a href="#acerca" class="footer-link-about" style="color: var(--text-muted); text-decoration: none;">Acerca de</a>
+          <a href="#terminos" style="color: var(--text-muted); text-decoration: none;">Términos</a>
+          <span>•</span>
+          <a href="#contacto" style="color: var(--text-muted); text-decoration: none;">Contacto</a>
         </div>
       </div>
     </div>
   </footer>
-
-  <!-- =========================================================================
-       MODAL: ACERCA DE
-       ========================================================================= -->
-  <div class="modal-backdrop" id="modalAbout" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
-    <div class="modal-window">
-      <button class="modal-close-btn" aria-label="Cerrar ventana">
-        <i data-lucide="x"></i>
-      </button>
-      <h3 id="aboutModalTitle" style="font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: var(--text-primary);">
-        Acerca de Herramientas PDF
-      </h3>
-      <p style="margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">
-        <strong>Herramientas PDF</strong> nació como una iniciativa para ofrecer a estudiantes, profesionales y empresas una suite completa de utilidades para documentos digitales, totalmente gratuita, veloz y sin restricciones.
-      </p>
-      <p style="margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">
-        A diferencia de los convertidores tradicionales en la nube que requieren subir archivos confidenciales a servidores externos, Herramientas PDF ejecuta todo el procesamiento en el entorno local de tu navegador web a través de tecnologías abiertas y seguras (PDF-Lib, Mozilla PDF.js y JSZip).
-      </p>
-      <div style="background: var(--bg-elevated); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-top: 1.5rem;">
-        <h4 style="font-size: 0.9375rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Características destacadas:</h4>
-        <ul style="list-style-position: inside; color: var(--text-secondary); font-size: 0.875rem; line-height: 1.7;">
-          <li>Sin cuentas ni contraseñas requeridas.</li>
-          <li>Sin tarifas mensuales ni cobros sorpresa.</li>
-          <li>Sin marcas de agua molestas en tus documentos.</li>
-          <li>Optimizado tanto para ordenadores de escritorio como dispositivos móviles.</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       MODAL: PRIVACIDAD
-       ========================================================================= -->
-  <div class="modal-backdrop" id="modalPrivacy" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle">
-    <div class="modal-window">
-      <button class="modal-close-btn" aria-label="Cerrar ventana">
-        <i data-lucide="x"></i>
-      </button>
-      <h3 id="privacyModalTitle" style="font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-        <i data-lucide="shield-check" style="color: var(--accent-success);"></i>
-        Compromiso de Privacidad Total
-      </h3>
-      <p style="margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">
-        En <strong>Herramientas PDF</strong>, tu privacidad no es una opción secundaria: es la base misma de la arquitectura técnica del proyecto.
-      </p>
-      <h4 style="font-size: 1.0625rem; font-weight: 700; color: var(--text-primary); margin-top: 1rem; margin-bottom: 0.5rem;">
-        ¿Se suben mis archivos a algún servidor?
-      </h4>
-      <p style="margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">
-        <strong>No, nunca.</strong> El procesamiento de unión, división, compresión, rotación y extracción ocurre al 100% en la memoria RAM de tu dispositivo. Ningún documento, imagen o fragmento de información es transferido por la red hacia nuestros servidores ni hacia terceros.
-      </p>
-      <h4 style="font-size: 1.0625rem; font-weight: 700; color: var(--text-primary); margin-top: 1rem; margin-bottom: 0.5rem;">
-        ¿Se almacenan copias o historiales de mis documentos?
-      </h4>
-      <p style="margin-bottom: 1.5rem; color: var(--text-secondary); line-height: 1.6;">
-        No guardamos historial alguno. En el momento en que cierras o recargas la pestaña del navegador, cualquier dato en memoria se destruye de forma instantánea e irreversible.
-      </p>
-      <div style="background: var(--accent-success-bg); border: 1px solid var(--accent-success); padding: 1rem; border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.875rem;">
-        🔒 <strong>Garantía de confidencialidad:</strong> Adecuado para contratos legales, historias clínicas, documentos fiscales y archivos personales sensibles.
-      </div>
-    </div>
-  </div>
 
   <!-- =========================================================================
        TOAST NOTIFICATIONS CONTAINER
